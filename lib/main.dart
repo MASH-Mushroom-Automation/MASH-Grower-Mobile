@@ -10,6 +10,7 @@ import 'core/config/theme_config.dart';
 import 'core/config/environment.dart';
 import 'firebase_options.dart';
 import 'presentation/providers/auth_provider.dart';
+import 'presentation/providers/registration_provider.dart';
 import 'presentation/providers/sensor_provider.dart';
 import 'presentation/providers/device_provider.dart';
 import 'presentation/providers/notification_provider.dart';
@@ -55,6 +56,7 @@ class MASHGrowerApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => RegistrationProvider()),
         ChangeNotifierProvider(create: (_) => SensorProvider()),
         ChangeNotifierProvider(create: (_) => DeviceProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),

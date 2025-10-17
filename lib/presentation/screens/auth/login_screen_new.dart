@@ -142,13 +142,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 16,
-                  ),
                   decoration: InputDecoration(
                     hintText: 'Enter email or username',
-                    hintStyle: TextStyle(color: Colors.grey.shade500),
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -189,13 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 16,
-                  ),
                   decoration: InputDecoration(
                     hintText: 'Enter Password',
-                    hintStyle: TextStyle(color: Colors.grey.shade500),
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
