@@ -6,6 +6,7 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../core/constants/storage_keys.dart';
 import '../../core/utils/logger.dart';
+import '../../core/services/session_service.dart';
 import '../../data/models/user_model.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
 import '../../data/datasources/local/auth_local_datasource.dart';
@@ -75,6 +76,13 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-access-token');
       await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-refresh-token');
       
+      // Save session data
+      final sessionService = SessionService();
+      await sessionService.createSessionFromLogin(
+        email: email,
+        username: email.split('@')[0],
+      );
+      
       _isAuthenticated = true;
       Logger.authLogin('Demo Authentication - Any credentials accepted');
       return true;
@@ -141,6 +149,13 @@ class AuthProvider extends ChangeNotifier {
       // Store mock tokens
       await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-google-access-token');
       await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-google-refresh-token');
+      
+      // Save session data
+      final sessionService = SessionService();
+      await sessionService.createSessionFromLogin(
+        email: 'demo@gmail.com',
+        username: 'GoogleUser',
+      );
       
       _isAuthenticated = true;
       Logger.authLogin('Demo Google Authentication');
@@ -225,6 +240,10 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.delete(key: StorageKeys.accessToken);
       await _secureStorage.delete(key: StorageKeys.refreshToken);
       await _secureStorage.delete(key: StorageKeys.userData);
+      
+      // Clear session data
+      final sessionService = SessionService();
+      await sessionService.clearSession();
       
       // Clear local data
       await _authLocalDataSource.clearUserData();

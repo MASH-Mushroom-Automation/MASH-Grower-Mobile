@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class ThemeConfig {
-  // Primary Colors
-  static const Color primaryColor = Color(0xFF2E7D32); // Forest Green
-  static const Color primaryVariant = Color(0xFF1B5E20);
-  static const Color secondaryColor = Color(0xFF4CAF50); // Light Green
-  static const Color secondaryVariant = Color(0xFF388E3C);
+  // Primary Colors (Updated to match design system)
+  static const Color primaryColor = Color(0xFF2D5F4C); // Dark Green from design
+  static const Color primaryVariant = Color(0xFF1B3D2F);
+  static const Color secondaryColor = Color(0xFF9BC4A8); // Light Green from design
+  static const Color secondaryVariant = Color(0xFF4CAF50);
   
   // Status Colors
   static const Color successColor = Color(0xFF4CAF50);
@@ -73,24 +73,35 @@ class ThemeConfig {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.dark,
+      brightness: Brightness.dark,
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      colorScheme: const ColorScheme.dark(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        surface: Color(0xFF1E1E1E),
+        background: Color(0xFF121212),
+        error: errorColor,
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 1,
+        backgroundColor: Color(0xFF1E1E1E),
+        foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       cardTheme: CardThemeData(
         elevation: 2,
+        color: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -98,15 +109,32 @@ class ThemeConfig {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF2A2A2A),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       chipTheme: ChipThemeData(
+        backgroundColor: const Color(0xFF2A2A2A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF1E1E1E),
+        selectedItemColor: primaryColor,
+        unselectedItemColor: Color(0xFF757575),
       ),
     );
   }

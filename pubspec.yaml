@@ -1,5 +1,5 @@
 name: mash_grower_mobile
-description: M.A.S.H. Grower Mobile App - Flutter application for mushroom growers
+description: MASH Grow Mobile App - Flutter application for mushroom growers
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -21,6 +21,7 @@ dependencies:
   
   # Networking
   dio: ^5.7.0
+  http: ^1.2.1
   web_socket_channel: ^3.0.1
   connectivity_plus: ^6.0.5
   

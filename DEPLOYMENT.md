@@ -1,8 +1,8 @@
-# M.A.S.H. Grower Mobile - Deployment Guide
+# MASH Grow Mobile - Deployment Guide
 
 ## Overview
 
-This guide covers the complete deployment process for the M.A.S.H. Grower Mobile Flutter application, including build configuration, app store submission, and production deployment.
+This guide covers the complete deployment process for the MASH Grow Mobile Flutter application, including build configuration, app store submission, and production deployment.
 
 ## Prerequisites
 
@@ -144,7 +144,7 @@ flutter build appbundle --release
 ### 3. Google Play Store Submission
 
 1. **Prepare Store Listing**
-   - App title: "M.A.S.H. Grower Mobile"
+   - App title: "MASH Grow Mobile"
    - Short description: "Smart mushroom growing assistant"
    - Full description: Use content from `assets/metadata/app_store_description.md`
    - Screenshots: 5-8 screenshots showing key features
@@ -200,7 +200,7 @@ flutter build ipa --release
 ### 3. App Store Submission
 
 1. **Prepare Store Listing**
-   - App name: "M.A.S.H. Grower Mobile"
+   - App name: "MASH Grow Mobile"
    - Subtitle: "Smart Mushroom Growing Assistant"
    - Description: Use content from `assets/metadata/app_store_description.md`
    - Keywords: "mushroom, farming, IoT, sensors"

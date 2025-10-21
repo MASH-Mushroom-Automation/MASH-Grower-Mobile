@@ -52,7 +52,7 @@ Core backend API for the M.A.S.H. system built with NestJS and TypeScript. Provi
 
 **Repository Name**: `MASH-Grower-Mobile`
 
-**Repository Title**: "M.A.S.H. Grower Mobile App - Flutter Application"
+**Repository Title**: "MASH Grow Mobile App - Flutter Application"
 
 **Description**:
 ```

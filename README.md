@@ -1,4 +1,4 @@
-# M.A.S.H. Grower Mobile App
+# MASH Grow Mobile App
 
 A Flutter mobile application for the M.A.S.H. (Mushroom Automation with Smart Hydro-environment) system that enables mushroom growers to monitor environmental conditions in real-time, control IoT devices remotely, receive critical alerts, and manage cultivation cycles—all with full offline capability.
 
@@ -230,4 +230,4 @@ For support and questions:
 
 ---
 
-**M.A.S.H. Grower Mobile App** - Smart mushroom growing made simple! 🍄
+**MASH Grow Mobile App** - Smart mushroom growing made simple! 🍄

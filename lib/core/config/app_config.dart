@@ -1,5 +1,5 @@
 class AppConfig {
-  static const String appName = 'M.A.S.H. Grower';
+  static const String appName = 'MASH Grow';
   static const String appVersion = '1.0.0';
   static const String appBuildNumber = '1';
   

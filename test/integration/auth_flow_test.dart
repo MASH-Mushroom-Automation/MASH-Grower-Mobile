@@ -35,7 +35,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify splash screen is shown initially
-      expect(find.text('M.A.S.H. Grower'), findsOneWidget);
+      expect(find.text('MASH Grow'), findsOneWidget);
 
       // Wait for authentication check to complete
       await tester.pumpAndSettle(const Duration(seconds: 2));

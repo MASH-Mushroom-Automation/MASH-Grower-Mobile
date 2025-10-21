@@ -1,4 +1,4 @@
-# M.A.S.H. Grower Mobile App - Setup Guide
+# MASH Grow Mobile App - Setup Guide
 
 ## Quick Start
 

@@ -128,9 +128,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 40),
                 
-                // Email or Username Label
+                // Email Label
                 Text(
-                  'Email or Username',
+                  'Email',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
                         color: Colors.grey.shade800,
@@ -147,8 +147,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: 16,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Enter email or username',
-                    hintStyle: TextStyle(color: Colors.grey.shade500),
+                    hintText: 'Enter email',
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -167,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email or username';
+                      return 'Please enter your email';
                     }
                     return null;
                   },
@@ -195,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter Password',
-                    hintStyle: TextStyle(color: Colors.grey.shade500),
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -319,12 +319,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     backgroundColor: Colors.white,
                   ),
-                  icon: Image.network(
-                    'https://www.google.com/favicon.ico',
+                  icon: Image.asset(
+                    'icons/google.png',
                     height: 24,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.g_mobiledata, size: 24, color: Colors.red);
-                    },
+                    width: 24
                   ),
                   label: const Text(
                     'Login with Google',
@@ -348,7 +346,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     backgroundColor: Colors.white,
                   ),
-                  icon: const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
+                  icon: Image.asset(
+                    'icons/facebook.png',
+                    height: 24,
+                    width: 24,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
+                    },
+                  ),
                   label: const Text(
                     'Login with Facebook',
                     style: TextStyle(

@@ -5,7 +5,7 @@ import '../../core/constants/storage_keys.dart';
 import '../../core/utils/logger.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
   bool _isLoading = false;
 
   ThemeMode get themeMode => _themeMode;

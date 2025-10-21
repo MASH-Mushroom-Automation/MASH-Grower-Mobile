@@ -83,7 +83,7 @@ class SuccessPage extends StatelessWidget {
               const SizedBox(height: 16),
 
               Text(
-                'Welcome to M.A.S.H. Grower!\nYou can now sign in to your account.',
+                'Welcome to MASH Grow!\nYou can now sign in to your account.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey.shade600,
                     ),

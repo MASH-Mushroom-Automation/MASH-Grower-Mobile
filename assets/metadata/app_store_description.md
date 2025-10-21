@@ -1,14 +1,14 @@
-# M.A.S.H. Grower Mobile - App Store Description
+# MASH Grow Mobile - App Store Description
 
 ## App Title
-M.A.S.H. Grower Mobile
+MASH Grow Mobile
 
 ## Subtitle
 Smart Mushroom Growing Assistant
 
 ## Description
 
-Transform your mushroom cultivation with M.A.S.H. Grower Mobile - the ultimate smart farming companion for serious mushroom growers.
+Transform your mushroom cultivation with MASH Grow Mobile - the ultimate smart farming companion for serious mushroom growers.
 
 **🌱 REAL-TIME MONITORING**
 • Live temperature, humidity, and CO₂ readings

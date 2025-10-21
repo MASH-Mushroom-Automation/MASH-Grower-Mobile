@@ -1,8 +1,8 @@
-# M.A.S.H. Grower Mobile - Performance Optimization Guide
+# MASH Grow Mobile - Performance Optimization Guide
 
 ## Overview
 
-This guide covers performance optimization strategies for the M.A.S.H. Grower Mobile Flutter application, including memory management, rendering optimization, and network efficiency.
+This guide covers performance optimization strategies for the MASH Grow Mobile Flutter application, including memory management, rendering optimization, and network efficiency.
 
 ## Performance Metrics
 

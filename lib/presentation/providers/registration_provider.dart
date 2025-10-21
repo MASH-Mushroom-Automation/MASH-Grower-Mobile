@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
+import '../../core/services/session_service.dart';
+
 class RegistrationProvider extends ChangeNotifier {
   // Page 1: Email
   String _email = '';
@@ -14,7 +16,8 @@ class RegistrationProvider extends ChangeNotifier {
   String _middleName = '';
   String _lastName = '';
   String _contactNumber = '';
-  String _countryCode = '+639';
+  String _countryCode = '+63';
+  bool _phoneOtpVerified = false;
   
   // Page 4: Account
   String _username = '';
@@ -58,6 +61,7 @@ class RegistrationProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   int get otpTimer => _otpTimer;
+  bool get phoneOtpVerified => _phoneOtpVerified;
   
   // Setters
   void setEmail(String value) {
@@ -92,6 +96,11 @@ class RegistrationProvider extends ChangeNotifier {
   
   void setCountryCode(String value) {
     _countryCode = value;
+    notifyListeners();
+  }
+  
+  void setPhoneOtpVerified(bool value) {
+    _phoneOtpVerified = value;
     notifyListeners();
   }
   
@@ -176,8 +185,8 @@ class RegistrationProvider extends ChangeNotifier {
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
       
-      // For demo, accept any 4-digit OTP
-      if (_otp.length == 4) {
+      // For demo, accept any 6-digit OTP
+      if (_otp.length == 6) {
         _isOtpVerified = true;
         _stopOtpTimer();
         _setLoading(false);
@@ -215,6 +224,16 @@ class RegistrationProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  // Public controls for OTP timer (used by phone verification step)
+  void startOtpTimer() {
+    _startOtpTimer();
+  }
+
+  void resetOtpTimer() {
+    _otpTimer = 60;
+    _startOtpTimer();
+  }
   
   // Complete Registration
   Future<bool> completeRegistration() async {
@@ -248,6 +267,41 @@ class RegistrationProvider extends ChangeNotifier {
       
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
+      
+      // Save session data
+      print('=== REGISTRATION DATA ===');
+      print('Email: $_email');
+      print('First Name: $_firstName');
+      print('Middle Name: $_middleName');
+      print('Last Name: $_lastName');
+      print('Contact: $_countryCode$_contactNumber');
+      print('Username: $_username');
+      print('Region: $_region');
+      print('Province: $_province');
+      print('City: $_city');
+      print('Barangay: $_barangay');
+      print('Street: $_streetAddress');
+      print('Profile Image: $_profileImagePath');
+      print('========================');
+      
+      final sessionService = SessionService();
+      await sessionService.createSessionFromRegistration(
+        email: _email,
+        firstName: _firstName,
+        middleName: _middleName,
+        lastName: _lastName,
+        contactNumber: _contactNumber,
+        countryCode: _countryCode,
+        username: _username,
+        profileImagePath: _profileImagePath,
+        region: _region,
+        province: _province,
+        city: _city,
+        barangay: _barangay,
+        streetAddress: _streetAddress,
+      );
+      
+      print('Session saved successfully!');
       
       _setLoading(false);
       return true;

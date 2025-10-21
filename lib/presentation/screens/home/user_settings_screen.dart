@@ -1,16 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'dart:typed_data';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../../core/services/session_service.dart';
 import '../auth/login_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../profile/change_password_screen.dart';
+import '../profile/personal_information_screen.dart';
+import '../settings/notifications_screen.dart';
+import '../support/help_support_screen.dart';
+import '../support/terms_conditions_screen.dart';
+import '../support/privacy_policy_screen.dart';
 
-class UserSettingsScreen extends StatelessWidget {
+class UserSettingsScreen extends StatefulWidget {
   const UserSettingsScreen({super.key});
 
   @override
+  State<UserSettingsScreen> createState() => _UserSettingsScreenState();
+}
+
+class _UserSettingsScreenState extends State<UserSettingsScreen> {
+  final SessionService _sessionService = SessionService();
+
+  @override
   Widget build(BuildContext context) {
+    final session = _sessionService.currentSession;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SingleChildScrollView(
@@ -29,19 +47,53 @@ class UserSettingsScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  const CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Color(0xFF2D5F4C),
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
                     ),
+                    child: session?.profileImagePath != null
+                        ? ClipOval(
+                            child: kIsWeb
+                                ? Image.network(
+                                    session!.profileImagePath!,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: Color(0xFF2D5F4C),
+                                      );
+                                    },
+                                  )
+                                : Image.file(
+                                    File(session!.profileImagePath!),
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: Color(0xFF2D5F4C),
+                                      );
+                                    },
+                                  ),
+                          )
+                        : const Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Color(0xFF2D5F4C),
+                          ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Juan Dela Cruz',
-                    style: TextStyle(
+                  Text(
+                    session?.fullName ?? 'Guest User',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -49,7 +101,7 @@ class UserSettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'j.delacruz@gmail.com',
+                    session?.email ?? 'guest@example.com',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withValues(alpha: 0.8),
@@ -84,11 +136,12 @@ class UserSettingsScreen extends StatelessWidget {
               title: 'Account Settings',
               items: [
                 _SettingsItem(
-                  icon: Icons.person_outline,
+                  icon: Icons.badge_outlined,
                   title: 'Personal Information',
+                  subtitle: 'View your profile and devices',
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                      MaterialPageRoute(builder: (_) => const PersonalInformationScreen()),
                     );
                   },
                 ),
@@ -102,15 +155,14 @@ class UserSettingsScreen extends StatelessWidget {
                   },
                 ),
                 _SettingsItem(
-                  icon: Icons.notifications_none,
+                  icon: Icons.notifications_outlined,
                   title: 'Notifications',
-                  trailing: Switch(
-                    value: true,
-                    onChanged: (value) {
-                      // TODO: Toggle notifications
-                    },
-                    activeTrackColor: const Color(0xFF2D5F4C),
-                  ),
+                  subtitle: 'Manage notification preferences',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                    );
+                  },
                 ),
               ],
             ),
@@ -130,15 +182,12 @@ class UserSettingsScreen extends StatelessWidget {
                   },
                 ),
                 _SettingsItem(
-                  icon: Icons.bluetooth,
-                  title: 'Bluetooth',
-                  trailing: Switch(
-                    value: true,
-                    onChanged: (value) {
-                      // TODO: Toggle bluetooth
-                    },
-                    activeTrackColor: const Color(0xFF2D5F4C),
-                  ),
+                  icon: Icons.wifi,
+                  title: 'WiFi Connection',
+                  subtitle: 'Manage device connections',
+                  onTap: () {
+                    // TODO: Navigate to WiFi settings
+                  },
                 ),
               ],
             ),
@@ -152,12 +201,19 @@ class UserSettingsScreen extends StatelessWidget {
                 _SettingsItem(
                   icon: Icons.dark_mode_outlined,
                   title: 'Dark Mode',
-                  trailing: Switch(
-                    value: false,
-                    onChanged: (value) {
-                      // TODO: Toggle dark mode
+                  trailing: Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, child) {
+                      final isDark = themeProvider.themeMode == ThemeMode.dark;
+                      return Switch(
+                        value: isDark,
+                        onChanged: (value) {
+                          themeProvider.setThemeMode(
+                            value ? ThemeMode.dark : ThemeMode.light,
+                          );
+                        },
+                        activeTrackColor: const Color(0xFF2D5F4C),
+                      );
                     },
-                    activeTrackColor: const Color(0xFF2D5F4C),
                   ),
                 ),
                 _SettingsItem(
@@ -180,22 +236,29 @@ class UserSettingsScreen extends StatelessWidget {
                 _SettingsItem(
                   icon: Icons.help_outline,
                   title: 'Help & Support',
+                  subtitle: 'FAQs and contact support',
                   onTap: () {
-                    // TODO: Navigate to help
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+                    );
                   },
                 ),
                 _SettingsItem(
                   icon: Icons.description_outlined,
                   title: 'Terms & Conditions',
                   onTap: () {
-                    // TODO: Navigate to terms
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const TermsConditionsScreen()),
+                    );
                   },
                 ),
                 _SettingsItem(
                   icon: Icons.privacy_tip_outlined,
                   title: 'Privacy Policy',
                   onTap: () {
-                    // TODO: Navigate to privacy policy
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                    );
                   },
                 ),
                 _SettingsItem(
@@ -203,7 +266,7 @@ class UserSettingsScreen extends StatelessWidget {
                   title: 'About',
                   subtitle: 'Version 1.0.0',
                   onTap: () {
-                    // TODO: Show about dialog
+                    _showAboutDialog(context);
                   },
                 ),
               ],
@@ -241,6 +304,79 @@ class UserSettingsScreen extends StatelessWidget {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D5F4C).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Image.asset(
+                'assets/images/mash-logo.png',
+                height: 32,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('About MASH Grower'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'MASH Grower',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D5F4C),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Version 1.0.0',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'MASH Grower is an IoT-based mushroom cultivation monitoring and automation system. Monitor temperature, humidity, CO2 levels, and control your growing environment from anywhere.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              '© 2025 MASH Grower\nAll rights reserved.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/session_service.dart';
 import '../../widgets/home/user_header.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import 'chamber_detail_screen.dart';
 import 'user_settings_screen.dart';
-import '../devices/device_connection_screen.dart';
+import '../devices/wifi_device_connection_screen.dart';
+import '../devices/devices_view_screen.dart';
+import '../analytics/analytics_view_screen.dart';
 import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,6 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentNavIndex = 0;
   bool _hasDevice = false; // Toggle this to test different states
   bool _isConnecting = false;
+  bool _isDeviceOn = true; // Device power state
+  final SessionService _sessionService = SessionService();
 
   @override
   void initState() {
@@ -34,15 +39,87 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleConnect() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const DeviceConnectionScreen()),
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const WiFiDeviceConnectionScreen()),
     );
 
-    if (result == true && mounted) {
-      setState(() {
-        _hasDevice = true;
-      });
-    }
+    // After returning from connection screen, check if device was added
+    setState(() {
+      _hasDevice = true; // TODO: Check actual device status from backend
+    });
+  }
+
+  void _handleAddNewDevice() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const WiFiDeviceConnectionScreen()),
+    );
+  }
+
+  void _showDeviceToggleConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange.shade700,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Turn Off Device?',
+              style: TextStyle(fontSize: 18),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to turn off this device? This will stop all monitoring and control functions.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _isDeviceOn = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Device turned off'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Turn Off'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -53,10 +130,11 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // User Header
           UserHeader(
-            userName: 'Juan Dela Cruz',
+            userName: _sessionService.currentSession?.fullName ?? 'Guest',
             subtitle: _hasDevice
                 ? 'You have 1 device actively monitoring'
                 : 'Please connect your device first.',
+            avatarUrl: _sessionService.currentSession?.profileImagePath,
             onNotificationTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const NotificationsScreen()),
@@ -294,35 +372,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // Sensor Status Grid
+                // Sensor Status Grid - Improved UX with larger cards
                 GridView.count(
-                  crossAxisCount: 4,
+                  crossAxisCount: 3,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.85,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1,
                   children: [
                     _buildSensorStatusCard(
                       icon: Icons.thermostat,
-                      label: 'Temp',
-                      status: '1 Sensor\nactive',
+                      label: 'Temperature',
+                      status: '1 Sensor active',
                     ),
                     _buildSensorStatusCard(
                       icon: Icons.water_drop,
                       label: 'Humidity',
-                      status: '1 Sensor\nactive',
+                      status: '1 Sensor active',
                     ),
                     _buildSensorStatusCard(
                       icon: Icons.air,
                       label: 'Fan',
-                      status: '1 Sensor\nactive',
+                      status: '1 Sensor active',
                     ),
-                    _buildSensorStatusCard(
-                      icon: Icons.opacity,
-                      label: 'Irrigation',
-                      status: '1 Sensor\nactive',
-                    ),
+                    // _buildSensorStatusCard(
+                    //   icon: Icons.opacity,
+                    //   label: 'Irrigation',
+                    //   status: '1 Sensor active',
+                    // ),
                   ],
                 ),
               ],
@@ -366,9 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 12),
               OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Add new device
-                },
+                onPressed: _handleAddNewDevice,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF2D5F4C),
                   side: const BorderSide(color: Color(0xFF2D5F4C)),
@@ -439,21 +515,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Switch(
-                        value: true,
+                        value: _isDeviceOn,
                         onChanged: (value) {
-                          // TODO: Toggle chamber
+                          if (!value) {
+                            _showDeviceToggleConfirmation();
+                          } else {
+                            setState(() {
+                              _isDeviceOn = true;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Device turned on'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
                         },
                         activeTrackColor: const Color(0xFF4CAF50),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'ON',
+                  Text(
+                    _isDeviceOn ? 'ON' : 'OFF',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D5F4C),
+                      color: _isDeviceOn ? const Color(0xFF2D5F4C) : Colors.grey,
                     ),
                   ),
                 ],
@@ -471,30 +559,37 @@ class _HomeScreenState extends State<HomeScreen> {
     required String status,
   }) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: const Color(0xFF2D5F4C), size: 24),
-          const SizedBox(height: 4),
+          Icon(icon, color: const Color(0xFF2D5F4C), size: 32),
+          const SizedBox(height: 8),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
               color: Color(0xFF2D5F4C),
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             status,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 12,
               color: Colors.grey.shade600,
             ),
           ),
@@ -503,16 +598,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Placeholder views for other tabs
+  // Devices View
   Widget _buildDevicesView() {
-    return const Center(
-      child: Text('Devices View - Coming Soon'),
-    );
+    return const DevicesViewScreen();
   }
 
+  // Analytics View
   Widget _buildAnalyticsView() {
-    return const Center(
-      child: Text('Analytics View - Coming Soon'),
-    );
+    return const AnalyticsViewScreen();
   }
 }

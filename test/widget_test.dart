@@ -29,7 +29,7 @@ void main() {
       );
 
       // Verify that the splash screen is shown
-      expect(find.text('M.A.S.H. Grower'), findsOneWidget);
+      expect(find.text('MASH Grow'), findsOneWidget);
       expect(find.text('Smart Mushroom Growing'), findsOneWidget);
     });
 

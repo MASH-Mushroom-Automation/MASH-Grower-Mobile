@@ -8,6 +8,7 @@ import 'app.dart';
 import 'core/config/app_config.dart';
 import 'core/config/theme_config.dart';
 import 'core/config/environment.dart';
+import 'core/services/session_service.dart';
 import 'firebase_options.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/registration_provider.dart';
@@ -44,6 +45,9 @@ void main() async {
   // if (!kIsWeb) {
   //   await DatabaseHelper.instance.database;
   // }
+  
+  // Initialize session service
+  await SessionService().initialize();
   
   runApp(const MASHGrowerApp());
 }

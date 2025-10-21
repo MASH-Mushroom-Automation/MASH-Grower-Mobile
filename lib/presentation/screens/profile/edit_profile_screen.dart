@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:typed_data';
+
+import '../../../core/services/session_service.dart';
+import '../../../core/models/psgc_models.dart';
+import '../../widgets/common/address_selector.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -10,27 +17,93 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController(text: 'Juan');
-  final _lastNameController = TextEditingController(text: 'Dela Cruz');
-  final _emailController = TextEditingController(text: 'j.delacruz@gmail.com');
-  final _phoneController = TextEditingController(text: '09123456789');
+  final _firstNameController = TextEditingController();
+  final _middleNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _streetAddressController = TextEditingController();
+  final SessionService _sessionService = SessionService();
+  String? _profileImagePath;
   bool _isLoading = false;
+  
+  // Address selections
+  Province? _selectedProvince;
+  City? _selectedCity;
+  Barangay? _selectedBarangay;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final session = _sessionService.currentSession;
+    if (session != null) {
+      setState(() {
+        _firstNameController.text = session.firstName;
+        _middleNameController.text = session.middleName;
+        _lastNameController.text = session.lastName;
+        _emailController.text = session.email;
+        _phoneController.text = session.contactNumber;
+        _usernameController.text = session.username;
+        _streetAddressController.text = session.streetAddress;
+        _profileImagePath = session.profileImagePath;
+        
+        // Load address data
+        if (session.province.isNotEmpty) {
+          _selectedProvince = Province(code: '', name: session.province);
+        }
+        if (session.city.isNotEmpty) {
+          _selectedCity = City(code: '', name: session.city, provinceCode: '');
+        }
+        if (session.barangay.isNotEmpty) {
+          _selectedBarangay = Barangay(code: '', name: session.barangay, cityCode: '');
+        }
+      });
+      
+      // Debug log
+      print('Loaded session data:');
+      print('Name: ${session.firstName} ${session.middleName} ${session.lastName}');
+      print('Email: ${session.email}');
+      print('Phone: ${session.contactNumber}');
+      print('Username: ${session.username}');
+      print('Province: ${session.province}');
+      print('City: ${session.city}');
+      print('Barangay: ${session.barangay}');
+      print('Address: ${session.streetAddress}');
+    } else {
+      print('No session found!');
+    }
+  }
 
   @override
   void dispose() {
     _firstNameController.dispose();
+    _middleNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _usernameController.dispose();
+    _streetAddressController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
     
-    if (image != null) {
-      // TODO: Upload image to backend
+    if (image != null && mounted) {
+      setState(() {
+        _profileImagePath = image.path;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile photo updated!')),
       );
@@ -44,8 +117,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _isLoading = true;
     });
 
+    // Update session data
+    await _sessionService.updateSession(
+      firstName: _firstNameController.text.trim(),
+      middleName: _middleNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      email: _emailController.text.trim(),
+      contactNumber: _phoneController.text.trim(),
+      username: _usernameController.text.trim(),
+      province: _selectedProvince?.name ?? '',
+      city: _selectedCity?.name ?? '',
+      barangay: _selectedBarangay?.name ?? '',
+      streetAddress: _streetAddressController.text.trim(),
+      profileImagePath: _profileImagePath,
+    );
+
     // TODO: Backend Integration - Update user profile
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 1));
 
     if (mounted) {
       setState(() {
@@ -59,7 +147,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       );
 
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true); // Return true to indicate update
     }
   }
 
@@ -93,14 +181,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Center(
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: const Color(0xFF2D5F4C),
-                      child: const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.white,
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF2D5F4C),
                       ),
+                      child: _profileImagePath != null
+                          ? ClipOval(
+                              child: kIsWeb
+                                  ? Image.network(
+                                      _profileImagePath!,
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return const Icon(
+                                          Icons.person,
+                                          size: 60,
+                                          color: Colors.white,
+                                        );
+                                      },
+                                    )
+                                  : Image.file(
+                                      File(_profileImagePath!),
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return const Icon(
+                                          Icons.person,
+                                          size: 60,
+                                          color: Colors.white,
+                                        );
+                                      },
+                                    ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.white,
+                            ),
                     ),
                     Positioned(
                       bottom: 0,
@@ -168,6 +290,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   }
                   return null;
                 },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Middle Name
+              Text(
+                'Middle Name',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _middleNameController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter middle name (optional)',
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -305,6 +465,127 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   }
                   return null;
                 },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Username
+              Text(
+                'Username',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _usernameController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter username',
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your username';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Address Section
+              const Text(
+                'Address',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Province, City, Barangay Selector
+              // AddressSelector(
+              //   selectedProvince: _selectedProvince,
+              //   selectedCity: _selectedCity,
+              //   selectedBarangay: _selectedBarangay,
+              //   onProvinceChanged: (province) {
+              //     setState(() {
+              //       _selectedProvince = province;
+              //       _selectedCity = null;
+              //       _selectedBarangay = null;
+              //     });
+              //   },
+              //   onCityChanged: (city) {
+              //     setState(() {
+              //       _selectedCity = city;
+              //       _selectedBarangay = null;
+              //     });
+              //   },
+              //   onBarangayChanged: (barangay) {
+              //     setState(() {
+              //       _selectedBarangay = barangay;
+              //     });
+              //   },
+              // ),
+
+              const SizedBox(height: 16),
+
+              // Street Address
+              Text(
+                'Street Address',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _streetAddressController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                ),
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'Enter street address, building, house no.',
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
               ),
 
               const SizedBox(height: 40),

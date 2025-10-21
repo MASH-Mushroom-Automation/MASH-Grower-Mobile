@@ -111,8 +111,8 @@ class RegistrationStepIndicatorWithLabels extends StatelessWidget {
                   final inactiveColor = Colors.grey.shade300;
                   
                   return Container(
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isCompleted || isCurrent ? primaryColor : inactiveColor,
@@ -154,25 +154,36 @@ class RegistrationStepIndicatorWithLabels extends StatelessWidget {
         
         // Labels
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(
-              stepLabels.length,
-              (index) => SizedBox(
-                width: 36,
-                child: Text(
-                  stepLabels[index],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: index == currentStep ? FontWeight.bold : FontWeight.normal,
-                    color: index <= currentStep
-                        ? const Color(0xFF2D5F4C)
-                        : Colors.grey.shade600,
-                  ),
-                ),
-              ),
+              stepLabels.length * 2 - 1,
+              (index) {
+                if (index.isEven) {
+                  // Label aligned with circle
+                  final labelIndex = index ~/ 2;
+                  return SizedBox(
+                    width: 48,
+                    child: Text(
+                      stepLabels[labelIndex],
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      style: TextStyle(
+                        fontSize: 10,
+                        height: 1.2,
+                        fontWeight: labelIndex == currentStep ? FontWeight.bold : FontWeight.normal,
+                        color: labelIndex <= currentStep
+                            ? const Color(0xFF2D5F4C)
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  );
+                } else {
+                  // Spacer between labels
+                  return const Expanded(child: SizedBox());
+                }
+              },
             ),
           ),
         ),

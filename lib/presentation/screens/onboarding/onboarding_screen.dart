@@ -32,7 +32,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFFEF6C00),
       showLogo: false,
       showImage: true,
-      imagePath: 'assets/designs/Onboarding/Onboard1.png',
+      imagePath: 'images/placeholders/800@2x.png',
     ),
     OnboardingPageData(
       title: 'Automated Systems',
@@ -42,7 +42,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFF1976D2),
       showLogo: false,
       showImage: true,
-      imagePath: 'assets/designs/Onboarding/Onboard2.png',
+      imagePath: 'images/placeholders/800@2x.png',
     ),
     OnboardingPageData(
       title: 'Data Analytics',
@@ -52,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFF7B1FA2),
       showLogo: false,
       showImage: true,
-      imagePath: 'assets/designs/Onboarding/Onboard3.png',
+      imagePath: 'images/placeholders/800@2x.png',
     ),
     OnboardingPageData(
       title: 'Expert Support',
@@ -62,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFFC62828),
       showLogo: false,
       showImage: true,
-      imagePath: 'assets/designs/Onboarding/Onboard4.png',
+      imagePath: 'images/placeholders/800@2x.png',
     ),
   ];
 
@@ -254,13 +254,12 @@ class OnboardingPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const Spacer(flex: 2),
+              const Spacer(flex: 1),
               // Logo for first page
               if (data.showLogo) ...[
                 Image.asset(
                   'assets/images/mash-logo.png',
-                  height: 80,
-                  color: data.textColor,
+                  height: MediaQuery.of(context).size.height * 0.2,
                   errorBuilder: (context, error, stackTrace) {
                     return Icon(
                       Icons.eco,
@@ -269,12 +268,12 @@ class OnboardingPage extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 15),
               ],
               // Image for other pages
               if (data.showImage && data.imagePath != null) ...[
                 Expanded(
-                  flex: 3,
+                  flex: 1,
                   child: Center(
                     child: Image.asset(
                       data.imagePath!,
@@ -285,7 +284,7 @@ class OnboardingPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
               ] else ...[
-                const Spacer(flex: 2),
+                const Spacer(flex: 1),
               ],
               // Title
               Text(
@@ -321,7 +320,7 @@ class OnboardingPage extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const Spacer(flex: 3),
+              const Spacer(flex: 2),
             ],
           ),
         ),

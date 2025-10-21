@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# M.A.S.H. Grower Mobile - iOS Build Script
+# MASH Grow Mobile - iOS Build Script
 # This script builds the iOS app for distribution
 
 set -e
 
-echo "🍄 Building M.A.S.H. Grower Mobile for iOS..."
+echo "🍄 Building MASH Grow Mobile for iOS..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -95,4 +95,4 @@ if command -v ios-deploy &> /dev/null; then
     fi
 fi
 
-print_success "🍄 M.A.S.H. Grower Mobile iOS build completed!"
+print_success "🍄 MASH Grow Mobile iOS build completed!"

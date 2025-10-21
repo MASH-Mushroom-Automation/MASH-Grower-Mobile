@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# M.A.S.H. Grower Mobile - Android Build Script
+# MASH Grow Mobile - Android Build Script
 # This script builds the Android APK and AAB for distribution
 
 set -e
 
-echo "🍄 Building M.A.S.H. Grower Mobile for Android..."
+echo "🍄 Building MASH Grow Mobile for Android..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -91,4 +91,4 @@ if command -v adb &> /dev/null; then
     fi
 fi
 
-print_success "🍄 M.A.S.H. Grower Mobile Android build completed!"
+print_success "🍄 MASH Grow Mobile Android build completed!"

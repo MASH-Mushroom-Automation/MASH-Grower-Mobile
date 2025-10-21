@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mash_grower_mobile/core/services/session_service.dart';
 
 class UserHeader extends StatelessWidget {
   final String userName;
@@ -16,6 +17,7 @@ class UserHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sessionService = SessionService();
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -55,7 +57,7 @@ class UserHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello, $userName',
+                  'Hello, ${sessionService.currentSession?.fullName ?? 'Guest'}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

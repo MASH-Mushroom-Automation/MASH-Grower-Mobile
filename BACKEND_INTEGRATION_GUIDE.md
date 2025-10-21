@@ -1,4 +1,4 @@
-# Backend Integration Guide for M.A.S.H. Grower Mobile App
+# Backend Integration Guide for MASH Grow Mobile App
 
 ## Overview
 This document outlines all the backend integration points in the Flutter mobile application. Each section corresponds to specific API endpoints from the NestJS backend.

@@ -21,10 +21,10 @@ class OtpVerificationPage extends StatefulWidget {
 
 class _OtpVerificationPageState extends State<OtpVerificationPage> {
   final List<TextEditingController> _otpControllers = List.generate(
-    4,
+    6,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
   void dispose() {
@@ -43,7 +43,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   Future<void> _handleNext() async {
     final otpCode = _getOtpCode();
-    if (otpCode.length != 4) {
+    if (otpCode.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter the complete OTP code'),
@@ -91,7 +91,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 50),
 
             // Step Indicator
             const RegistrationStepIndicatorWithLabels(
@@ -99,7 +99,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
               stepLabels: ['Verify', 'Profile', 'Account', 'Password'],
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
 
             // Title
             Text(
@@ -137,10 +137,10 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
             // OTP Input Boxes
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(4, (index) {
+              children: List.generate(6, (index) {
                 return SizedBox(
-                  width: 64,
-                  height: 64,
+                  width: 52,
+                  height: 56,
                   child: TextFormField(
                     controller: _otpControllers[index],
                     focusNode: _focusNodes[index],
@@ -150,6 +150,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D5F4C),
                     ),
                     decoration: InputDecoration(
                       counterText: '',
@@ -172,7 +173,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       FilteringTextInputFormatter.digitsOnly,
                     ],
                     onChanged: (value) {
-                      if (value.isNotEmpty && index < 3) {
+                      if (value.isNotEmpty && index < 5) {
                         _focusNodes[index + 1].requestFocus();
                       } else if (value.isEmpty && index > 0) {
                         _focusNodes[index - 1].requestFocus();

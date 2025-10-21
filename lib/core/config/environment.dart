@@ -51,9 +51,9 @@ class EnvironmentConfig {
   static String get appName {
     switch (_environment) {
       case Environment.development:
-        return 'M.A.S.H. Grower (Dev)';
+        return 'MASH Grow (Dev)';
       case Environment.production:
-        return 'M.A.S.H. Grower';
+        return 'MASH Grow';
     }
   }
 }

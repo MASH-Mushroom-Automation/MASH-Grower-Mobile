@@ -119,7 +119,7 @@ class _EmailPageState extends State<EmailPage> {
 
               // Email Field Label
               Text(
-                'Email or Username',
+                'Email',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade800,
@@ -137,7 +137,7 @@ class _EmailPageState extends State<EmailPage> {
                   fontSize: 16,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Enter email or username',
+                  hintText: 'Enter email',
                   hintStyle: TextStyle(color: Colors.grey.shade400),
                   filled: true,
                   fillColor: Colors.white,
@@ -157,12 +157,13 @@ class _EmailPageState extends State<EmailPage> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email or username';
+                    return 'Please enter your email.';
                   }
-                  if (value.contains('@') &&
-                      !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Please enter a valid email';
+                  // Check if the email is valid
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    return 'Please enter a valid email.';
                   }
+
                   return null;
                 },
               ),
@@ -252,12 +253,10 @@ class _EmailPageState extends State<EmailPage> {
                   ),
                   backgroundColor: Colors.white,
                 ),
-                icon: Image.network(
-                  'https://www.google.com/favicon.ico',
+                icon: Image.asset(
+                  'icons/google.png',
                   height: 24,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.g_mobiledata, size: 24);
-                  },
+                  width: 24
                 ),
                 label: const Text(
                   'Sign up with Google',
@@ -281,7 +280,14 @@ class _EmailPageState extends State<EmailPage> {
                   ),
                   backgroundColor: Colors.white,
                 ),
-                icon: const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
+                icon: Image.asset(
+                  'icons/facebook.png',
+                  height: 24,
+                  width: 24,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
+                  },
+                ),
                 label: const Text(
                   'Sign up with Facebook',
                   style: TextStyle(
