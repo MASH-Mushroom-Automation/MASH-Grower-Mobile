@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/forgot_password_provider.dart';
-import 'forgot_password_otp_screen.dart';
+import 'forgot_password_pages/forgot_password_otp_screen.dart';
 import 'login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {

@@ -2,8 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/forgot_password_provider.dart';
-import 'login_screen.dart';
+import '../../../providers/forgot_password_provider.dart';
+import '../login_screen.dart';
 
 class PasswordResetSuccessScreen extends StatelessWidget {
   const PasswordResetSuccessScreen({super.key});

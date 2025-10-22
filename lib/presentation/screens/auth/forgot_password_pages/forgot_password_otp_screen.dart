@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/forgot_password_provider.dart';
+import '../../../providers/forgot_password_provider.dart';
 import 'reset_password_screen.dart';
 
 class ForgotPasswordOTPScreen extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/forgot_password_provider.dart';
+import '../../../providers/forgot_password_provider.dart';
 import 'password_reset_success_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
