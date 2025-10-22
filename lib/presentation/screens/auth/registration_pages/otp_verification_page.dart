@@ -168,6 +168,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                     ),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,

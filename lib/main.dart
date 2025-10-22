@@ -16,6 +16,7 @@ import 'presentation/providers/sensor_provider.dart';
 import 'presentation/providers/device_provider.dart';
 import 'presentation/providers/notification_provider.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'presentation/providers/forgot_password_provider.dart';
 import 'data/datasources/local/database_helper.dart' if (dart.library.html) 'data/datasources/local/database_helper_web.dart';
 import 'core/utils/logger.dart';
 
@@ -65,6 +66,7 @@ class MASHGrowerApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DeviceProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ForgotPasswordProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

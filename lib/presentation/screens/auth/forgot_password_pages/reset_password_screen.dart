@@ -2,43 +2,68 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/forgot_password_provider.dart';
-import 'forgot_password_otp_screen.dart';
-import 'login_screen.dart';
+import 'password_reset_success_screen.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends StatefulWidget {
+  const ResetPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  // Password requirements
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasNumber = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_checkPasswordRequirements);
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _passwordController.removeListener(_checkPasswordRequirements);
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSendOTP() async {
+  void _checkPasswordRequirements() {
+    final password = _passwordController.text;
+    setState(() {
+      _hasMinLength = password.length >= 8;
+      _hasUppercase = password.contains(RegExp(r'[A-Z]'));
+      _hasNumber = password.contains(RegExp(r'[0-9]'));
+    });
+  }
+
+  Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final provider = Provider.of<ForgotPasswordProvider>(context, listen: false);
-    provider.setEmail(_emailController.text.trim());
-    
-    final success = await provider.sendOtp();
-    
+    final provider = context.read<ForgotPasswordProvider>();
+    provider.setPassword(_passwordController.text);
+    provider.setConfirmPassword(_confirmPasswordController.text);
+
+    final success = await provider.resetPassword();
     if (success && mounted) {
-      // Navigate to OTP verification screen
-      Navigator.of(context).push(
+      // Navigate to success screen
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => ChangeNotifierProvider.value(
             value: provider,
-            child: const ForgotPasswordOTPScreen(),
+            child: const PasswordResetSuccessScreen(),
           ),
         ),
+        (route) => false,
       );
     }
   }
@@ -92,7 +117,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 
                 // Title
                 Text(
-                  'Forgot Password',
+                  'Reset Password',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF2D5F4C),
@@ -103,7 +128,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const SizedBox(height: 8),
                 
                 Text(
-                  'Enter your email to receive a verification code',
+                  'Create a new password for your account',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                       ),
@@ -112,26 +137,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 
                 const SizedBox(height: 40),
                 
-                // Email Label
+                // Password
                 Text(
-                  'Email',
+                  'New Password',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
                         color: Colors.grey.shade800,
                       ),
                 ),
                 const SizedBox(height: 8),
-                
-                // Email Input
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
                   style: const TextStyle(
                     color: Colors.black87,
                     fontSize: 16,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'j.delacruz@gmail.com',
+                    hintText: 'Enter new password',
                     hintStyle: TextStyle(color: Colors.grey.shade400),
                     filled: true,
                     fillColor: Colors.white,
@@ -148,13 +171,83 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey.shade600,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Password is required';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Please enter a valid email';
+                    if (!_hasMinLength || !_hasUppercase || !_hasNumber) {
+                      return 'Password does not meet requirements';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Confirm Password
+                Text(
+                  'Confirm Password',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade800,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Confirm new password',
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey.shade600,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
                     }
                     return null;
                   },
@@ -162,41 +255,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Remember Password Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Remembered your password? ',
-                      style: TextStyle(color: Colors.grey.shade700),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
-                          color: Color(0xFF2D5F4C),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // Password Requirements
+                _buildRequirement('At least 8 characters', _hasMinLength),
+                const SizedBox(height: 8),
+                _buildRequirement('At least one uppercase letter', _hasUppercase),
+                const SizedBox(height: 8),
+                _buildRequirement('At least one number', _hasNumber),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 40),
                 
-                // Send OTP Button
+                // Reset Password Button
                 Consumer<ForgotPasswordProvider>(
                   builder: (context, provider, child) {
                     return ElevatedButton(
-                      onPressed: provider.isLoading ? null : _handleSendOTP,
+                      onPressed: provider.isLoading ? null : _handleResetPassword,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2D5F4C),
                         foregroundColor: Colors.white,
@@ -216,7 +288,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             )
                           : const Text(
-                              'Send OTP',
+                              'Reset Password',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -230,6 +302,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRequirement(String text, bool isMet) {
+    return Row(
+      children: [
+        Icon(
+          isMet ? Icons.check_circle : Icons.cancel,
+          size: 20,
+          color: isMet ? Colors.green : Colors.red,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            color: isMet ? Colors.green : Colors.red,
+          ),
+        ),
+      ],
     );
   }
 }
