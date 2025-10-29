@@ -43,6 +43,34 @@ class AuthProvider extends ChangeNotifier {
           _isAuthenticated = true;
           Logger.authLogin('Firebase (existing session)');
         }
+      } else {
+        // Check if we have session data from registration
+        final sessionService = SessionService();
+        await sessionService.initialize();
+        final sessionData = await sessionService.getRegistrationData();
+        
+        if (sessionData != null) {
+          Logger.info('🔍 Auth Init - Found session data: $sessionData');
+          
+          // Create user from session data
+          _user = UserModel(
+            id: 'session-user-${DateTime.now().millisecondsSinceEpoch}',
+            email: sessionData['email'] ?? 'user@example.com',
+            firstName: sessionData['firstName'] ?? 'User',
+            lastName: sessionData['lastName'] ?? 'Name',
+            profileImageUrl: sessionData['profileImagePath'],
+            role: 'grower',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          
+          // Store mock tokens
+          await _secureStorage.write(key: StorageKeys.accessToken, value: 'session-access-token');
+          await _secureStorage.write(key: StorageKeys.refreshToken, value: 'session-refresh-token');
+          
+          _isAuthenticated = true;
+          Logger.authLogin('Session Data (auto-login)');
+        }
       }
     } catch (e) {
       Logger.error('Auth initialization failed: $e');
@@ -57,16 +85,32 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      // BYPASS: Accept any credentials for demo purposes
-      Logger.info('🔓 BYPASS: Accepting any credentials for demo - Email: $email');
+      // Check if email is registered
+      final sessionService = SessionService();
+      await sessionService.initialize();
       
-      // Create a mock user with the provided email
+      final isRegistered = await sessionService.isEmailRegistered(email);
+      if (!isRegistered) {
+        _setError('Email not registered. Please register first.');
+        return false;
+      }
+      
+      Logger.info('🔓 Login attempt for registered email: $email');
+      
+      // Load account data for this email
+      final accountData = await sessionService.getAccountData(email);
+      if (accountData == null) {
+        _setError('Account data not found. Please register again.');
+        return false;
+      }
+      
+      // Create user from account data
       _user = UserModel(
-        id: 'demo-user-${DateTime.now().millisecondsSinceEpoch}',
-        email: email,
-        firstName: 'Demo',
-        lastName: 'User',
-        profileImageUrl: null,
+        id: 'user-${accountData.email}',
+        email: accountData.email,
+        firstName: accountData.firstName,
+        lastName: accountData.lastName,
+        profileImageUrl: accountData.profileImagePath,
         role: 'grower',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -76,20 +120,19 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-access-token');
       await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-refresh-token');
       
-      // Save session data
-      final sessionService = SessionService();
+      // Load session data
       await sessionService.createSessionFromLogin(
         email: email,
-        username: email.split('@')[0],
+        username: accountData.username,
       );
       
       _isAuthenticated = true;
-      Logger.authLogin('Demo Authentication - Any credentials accepted');
+      Logger.authLogin('Registered User Login - $email');
       return true;
       
     } catch (e) {
       Logger.error('Email sign in failed: $e');
-      _setError('Invalid email or password');
+      _setError('Login failed: ${e.toString()}');
       return false;
     } finally {
       _setLoading(false);
@@ -101,25 +144,59 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      // Create Firebase user
-      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (credential.user != null) {
-        // Update Firebase user profile
-        await credential.user!.updateDisplayName('$firstName $lastName');
-        
-        // Exchange Firebase token for backend JWT
-        await _exchangeFirebaseToken();
-        Logger.authLogin('Email/Password (new user)');
-        return true;
+      // Check if email is already registered
+      final sessionService = SessionService();
+      await sessionService.initialize();
+      
+      final isAlreadyRegistered = await sessionService.isEmailRegistered(email);
+      if (isAlreadyRegistered) {
+        _setError('Email already registered. Please login instead.');
+        return false;
       }
-      return false;
+      
+      Logger.info('🔓 Registration attempt for new email: $email');
+      
+      // Save registration data
+      await sessionService.createSessionFromRegistration(
+        email: email,
+        prefix: '',
+        firstName: firstName,
+        middleName: '',
+        lastName: lastName,
+        suffix: '',
+        contactNumber: '',
+        countryCode: '+63',
+        username: email.split('@')[0],
+        region: '',
+        province: '',
+        city: '',
+        barangay: '',
+        streetAddress: '',
+      );
+      
+      // Create user with provided data
+      _user = UserModel(
+        id: 'user-$email',
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        profileImageUrl: null,
+        role: 'grower',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      // Store mock tokens
+      await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-access-token');
+      await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-refresh-token');
+      
+      _isAuthenticated = true;
+      Logger.authLogin('New User Registration - $email');
+      return true;
+      
     } catch (e) {
       Logger.error('Email sign up failed: $e');
-      _setError('Failed to create account');
+      _setError('Registration failed: ${e.toString()}');
       return false;
     } finally {
       _setLoading(false);

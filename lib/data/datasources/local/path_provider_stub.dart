@@ -15,3 +15,4 @@ Future<Directory> getApplicationDocumentsDirectory() async {
 Future<Directory> getTemporaryDirectory() async {
   throw UnsupportedError('getTemporaryDirectory is not supported on web platform');
 }
+

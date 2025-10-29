@@ -25,6 +25,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   final _middleNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _contactNumberController = TextEditingController();
+  final List<String> _prefixOptions = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Engr.', 'Prof.'];
+  final List<String> _suffixOptions = ['Jr.', 'Sr.', 'III', 'IV', 'PhD', 'MD'];
+  String? _selectedPrefix;
+  String? _selectedSuffix;
 
   @override
   void initState() {
@@ -32,10 +36,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     // Load existing data from provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<RegistrationProvider>();
+      _selectedPrefix = provider.prefix.isNotEmpty ? provider.prefix : null;
       _firstNameController.text = provider.firstName;
       _middleNameController.text = provider.middleName;
       _lastNameController.text = provider.lastName;
       _contactNumberController.text = provider.contactNumber;
+      _selectedSuffix = provider.suffix.isNotEmpty ? provider.suffix : null;
     });
   }
 
@@ -52,9 +58,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<RegistrationProvider>();
+    provider.setPrefix(_selectedPrefix ?? '');
     provider.setFirstName(_firstNameController.text.trim());
     provider.setMiddleName(_middleNameController.text.trim());
     provider.setLastName(_lastNameController.text.trim());
+    provider.setSuffix(_selectedSuffix ?? '');
     provider.setContactNumber(_contactNumberController.text.trim());
 
     widget.onNext();
@@ -102,6 +110,64 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               ),
 
               const SizedBox(height: 40),
+
+              // Prefix
+              Row(
+                children: [
+                  Text(
+                    'Prefix',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade800,
+                        ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '(Optional)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedPrefix,
+                decoration: InputDecoration(
+                  hintText: 'Select prefix',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                items: _prefixOptions
+                    .map(
+                      (prefix) => DropdownMenuItem(
+                        value: prefix,
+                        child: Text(prefix),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPrefix = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 20),
 
               // First Name
               Text(
@@ -235,6 +301,64 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     return 'Last name is required';
                   }
                   return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Suffix
+              Row(
+                children: [
+                  Text(
+                    'Suffix',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade800,
+                        ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '(Optional)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedSuffix,
+                decoration: InputDecoration(
+                  hintText: 'Select suffix',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                items: _suffixOptions
+                    .map(
+                      (suffix) => DropdownMenuItem(
+                        value: suffix,
+                        child: Text(suffix),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSuffix = value;
+                  });
                 },
               ),
 

@@ -24,6 +24,7 @@ dependencies:
   http: ^1.2.1
   web_socket_channel: ^3.0.1
   connectivity_plus: ^6.0.5
+  multicast_dns: ^0.3.2+6
   
   # Firebase
   firebase_messaging: ^15.1.3

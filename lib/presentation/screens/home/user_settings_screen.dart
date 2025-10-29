@@ -25,9 +25,34 @@ class UserSettingsScreen extends StatefulWidget {
 
 class _UserSettingsScreenState extends State<UserSettingsScreen> {
   final SessionService _sessionService = SessionService();
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeSession();
+  }
+
+  void _initializeSession() async {
+    await _sessionService.initialize();
+    print('🔍 User Settings - Session initialized: ${_sessionService.currentSession?.toJson()}');
+    if (mounted) {
+      setState(() {
+        _isInitialized = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     final session = _sessionService.currentSession;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),

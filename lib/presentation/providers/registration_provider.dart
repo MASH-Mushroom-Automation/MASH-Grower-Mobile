@@ -12,9 +12,11 @@ class RegistrationProvider extends ChangeNotifier {
   bool _isOtpVerified = false;
   
   // Page 3: Profile
+  String _prefix = '';
   String _firstName = '';
   String _middleName = '';
   String _lastName = '';
+  String _suffix = '';
   String _contactNumber = '';
   String _countryCode = '+63';
   bool _phoneOtpVerified = false;
@@ -44,9 +46,11 @@ class RegistrationProvider extends ChangeNotifier {
   String get email => _email;
   String get otp => _otp;
   bool get isOtpVerified => _isOtpVerified;
+  String get prefix => _prefix;
   String get firstName => _firstName;
   String get middleName => _middleName;
   String get lastName => _lastName;
+  String get suffix => _suffix;
   String get contactNumber => _contactNumber;
   String get countryCode => _countryCode;
   String get username => _username;
@@ -74,11 +78,16 @@ class RegistrationProvider extends ChangeNotifier {
     notifyListeners();
   }
   
+  void setPrefix(String value) {
+    _prefix = value;
+    notifyListeners();
+  }
+
   void setFirstName(String value) {
     _firstName = value;
     notifyListeners();
   }
-  
+
   void setMiddleName(String value) {
     _middleName = value;
     notifyListeners();
@@ -88,7 +97,12 @@ class RegistrationProvider extends ChangeNotifier {
     _lastName = value;
     notifyListeners();
   }
-  
+
+  void setSuffix(String value) {
+    _suffix = value;
+    notifyListeners();
+  }
+
   void setContactNumber(String value) {
     _contactNumber = value;
     notifyListeners();
@@ -271,9 +285,11 @@ class RegistrationProvider extends ChangeNotifier {
       // Save session data
       print('=== REGISTRATION DATA ===');
       print('Email: $_email');
+      print('Prefix: $_prefix');
       print('First Name: $_firstName');
       print('Middle Name: $_middleName');
       print('Last Name: $_lastName');
+      print('Suffix: $_suffix');
       print('Contact: $_countryCode$_contactNumber');
       print('Username: $_username');
       print('Region: $_region');
@@ -285,11 +301,14 @@ class RegistrationProvider extends ChangeNotifier {
       print('========================');
       
       final sessionService = SessionService();
+      await sessionService.initialize();
       await sessionService.createSessionFromRegistration(
         email: _email,
+        prefix: _prefix,
         firstName: _firstName,
         middleName: _middleName,
         lastName: _lastName,
+        suffix: _suffix,
         contactNumber: _contactNumber,
         countryCode: _countryCode,
         username: _username,
@@ -353,9 +372,11 @@ class RegistrationProvider extends ChangeNotifier {
     _email = '';
     _otp = '';
     _isOtpVerified = false;
+    _prefix = '';
     _firstName = '';
     _middleName = '';
     _lastName = '';
+    _suffix = '';
     _contactNumber = '';
     _countryCode = '+639';
     _username = '';

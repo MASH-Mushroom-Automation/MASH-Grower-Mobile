@@ -27,7 +27,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeSession();
     _checkDeviceStatus();
+  }
+
+  void _initializeSession() async {
+    await _sessionService.initialize();
+    print('🔍 Home Screen - Session initialized: ${_sessionService.currentSession?.toJson()}');
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _checkDeviceStatus() {

@@ -17,7 +17,7 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
   final List<String> _devices = ['All Devices', 'Chamber 1', 'Chamber 2'];
   bool _hasDevices = true; // Change to false to show empty state
   
-  // Mock data based on period
+  // Mock data based on period - Mushroom Growing Focused
   Map<String, dynamic> get _currentData {
     switch (_selectedPeriod) {
       case 'Day':
@@ -25,44 +25,60 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
           'energy': '12 kWh',
           'energyChange': '+5%',
           'energyTrend': 'up',
-          'avgTemp': '30.2°C',
-          'avgHumidity': '55%',
+          'avgTemp': '22.5°C',
+          'avgHumidity': '85%',
+          'co2Level': '800 ppm',
+          'lightHours': '8.5h',
           'uptime': '100%',
           'efficiency': '92%',
-          'responseTime': '0.8s',
+          'harvestYield': '2.3 kg',
+          'growthRate': '15%',
+          'mushroomCount': '45',
         };
       case 'Week':
         return {
           'energy': '165 kWh',
           'energyChange': '-12%',
           'energyTrend': 'down',
-          'avgTemp': '29.5°C',
-          'avgHumidity': '52%',
+          'avgTemp': '23.2°C',
+          'avgHumidity': '82%',
+          'co2Level': '750 ppm',
+          'lightHours': '8.2h',
           'uptime': '99.8%',
           'efficiency': '87.5%',
-          'responseTime': '1.2s',
+          'harvestYield': '18.5 kg',
+          'growthRate': '12%',
+          'mushroomCount': '320',
         };
       case 'Month':
         return {
           'energy': '680 kWh',
           'energyChange': '-8%',
           'energyTrend': 'down',
-          'avgTemp': '29.8°C',
-          'avgHumidity': '53%',
+          'avgTemp': '23.8°C',
+          'avgHumidity': '83%',
+          'co2Level': '780 ppm',
+          'lightHours': '8.0h',
           'uptime': '99.2%',
           'efficiency': '85%',
-          'responseTime': '1.5s',
+          'harvestYield': '78.2 kg',
+          'growthRate': '18%',
+          'mushroomCount': '1,450',
         };
       case 'Year':
         return {
           'energy': '8,450 kWh',
           'energyChange': '-15%',
           'energyTrend': 'down',
-          'avgTemp': '29.1°C',
-          'avgHumidity': '51%',
+          'avgTemp': '23.1°C',
+          'avgHumidity': '81%',
+          'co2Level': '760 ppm',
+          'lightHours': '7.8h',
           'uptime': '98.5%',
           'efficiency': '83%',
-          'responseTime': '1.8s',
+          'harvestYield': '920 kg',
+          'growthRate': '22%',
+          'mushroomCount': '18,200',
         };
       default:
         return {};
@@ -645,6 +661,137 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
 
                 const SizedBox(height: 16),
 
+                // Mushroom Growth Metrics Card
+                _buildAnalyticsCard(
+                  title: 'Mushroom Growth Metrics',
+                  icon: Icons.eco,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Harvest Yield',
+                            value: _currentData['harvestYield'],
+                            icon: Icons.agriculture,
+                            color: Colors.green,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Growth Rate',
+                            value: _currentData['growthRate'],
+                            icon: Icons.trending_up,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Mushroom Count',
+                            value: _currentData['mushroomCount'],
+                            icon: Icons.circle,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Light Hours',
+                            value: _currentData['lightHours'],
+                            icon: Icons.lightbulb,
+                            color: Colors.yellow.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Environmental Conditions Card
+                _buildAnalyticsCard(
+                  title: 'Environmental Conditions',
+                  icon: Icons.thermostat,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Temperature',
+                            value: _currentData['avgTemp'],
+                            icon: Icons.thermostat,
+                            color: Colors.red,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Humidity',
+                            value: _currentData['avgHumidity'],
+                            icon: Icons.water_drop,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'CO2 Level',
+                            value: _currentData['co2Level'],
+                            icon: Icons.air,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.green.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green, size: 24),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Optimal',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Growing Conditions',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
                 // System Performance Card
                 _buildAnalyticsCard(
                   title: 'System Performance',
@@ -675,27 +822,106 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
 
                 const SizedBox(height: 16),
 
-                // Alerts & Events Card
+                // Growing Insights Card
                 _buildAnalyticsCard(
-                  title: 'Recent Alerts & Events',
-                  icon: Icons.notifications,
+                  title: 'Growing Insights & Recommendations',
+                  icon: Icons.lightbulb_outline,
                   children: [
-                    _buildAlertItem(
-                      title: 'Temperature spike detected',
+                    _buildInsightItem(
+                      title: 'Optimal growing conditions maintained',
+                      description: 'Temperature and humidity are within ideal ranges for mushroom growth',
                       time: '2 hours ago',
-                      type: 'warning',
-                    ),
-                    const Divider(height: 24),
-                    _buildAlertItem(
-                      title: 'Humidity level optimal',
-                      time: '5 hours ago',
                       type: 'success',
                     ),
                     const Divider(height: 24),
-                    _buildAlertItem(
-                      title: 'System maintenance completed',
+                    _buildInsightItem(
+                      title: 'Harvest ready in 3 days',
+                      description: 'Based on growth rate analysis, mushrooms will be ready for harvest',
                       time: '1 day ago',
                       type: 'info',
+                    ),
+                    const Divider(height: 24),
+                    _buildInsightItem(
+                      title: 'CO2 levels slightly high',
+                      description: 'Consider increasing ventilation to improve air circulation',
+                      time: '3 hours ago',
+                      type: 'warning',
+                    ),
+                    const Divider(height: 24),
+                    _buildInsightItem(
+                      title: 'Growth rate above average',
+                      description: 'Current conditions are promoting excellent mushroom development',
+                      time: '6 hours ago',
+                      type: 'success',
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Cost Analysis Card
+                _buildAnalyticsCard(
+                  title: 'Cost Analysis & ROI',
+                  icon: Icons.attach_money,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Energy Cost',
+                            value: '₱${(double.parse(_currentData['energy'].replaceAll(' kWh', '')) * 8.5).toStringAsFixed(0)}',
+                            icon: Icons.electrical_services,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMetricItem(
+                            label: 'Revenue Potential',
+                            value: '₱${(double.parse(_currentData['harvestYield'].replaceAll(' kg', '')) * 150).toStringAsFixed(0)}',
+                            icon: Icons.monetization_on,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.trending_up, color: Colors.blue, size: 24),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ROI: ${((double.parse(_currentData['harvestYield'].replaceAll(' kg', '')) * 150) / (double.parse(_currentData['energy'].replaceAll(' kWh', '')) * 8.5) * 100).toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Return on Investment',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -893,6 +1119,81 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInsightItem({
+    required String title,
+    required String description,
+    required String time,
+    required String type,
+  }) {
+    Color iconColor;
+    IconData iconData;
+
+    switch (type) {
+      case 'warning':
+        iconColor = Colors.orange;
+        iconData = Icons.warning_amber_rounded;
+        break;
+      case 'success':
+        iconColor = Colors.green;
+        iconData = Icons.check_circle;
+        break;
+      case 'info':
+        iconColor = Colors.blue;
+        iconData = Icons.lightbulb;
+        break;
+      default:
+        iconColor = Colors.grey;
+        iconData = Icons.circle;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(iconData, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF2D5F4C),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
                 ),
               ),
             ],

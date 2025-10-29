@@ -20,6 +20,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _firstNameController = TextEditingController();
   final _middleNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  final List<String> _prefixOptions = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Engr.', 'Prof.'];
+  final List<String> _suffixOptions = ['Jr.', 'Sr.', 'III', 'IV', 'PhD', 'MD'];
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _usernameController = TextEditingController();
@@ -27,6 +29,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final SessionService _sessionService = SessionService();
   String? _profileImagePath;
   bool _isLoading = false;
+  String? _selectedPrefix;
+  String? _selectedSuffix;
   
   // Address selections
   Province? _selectedProvince;
@@ -43,9 +47,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final session = _sessionService.currentSession;
     if (session != null) {
       setState(() {
+        _selectedPrefix = session.prefix.isNotEmpty ? session.prefix : null;
         _firstNameController.text = session.firstName;
         _middleNameController.text = session.middleName;
         _lastNameController.text = session.lastName;
+        _selectedSuffix = session.suffix.isNotEmpty ? session.suffix : null;
         _emailController.text = session.email;
         _phoneController.text = session.contactNumber;
         _usernameController.text = session.username;
@@ -66,7 +72,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       
       // Debug log
       print('Loaded session data:');
-      print('Name: ${session.firstName} ${session.middleName} ${session.lastName}');
+      print('Name: ${session.prefix} ${session.firstName} ${session.middleName} ${session.lastName} ${session.suffix}');
       print('Email: ${session.email}');
       print('Phone: ${session.contactNumber}');
       print('Username: ${session.username}');
@@ -119,9 +125,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     // Update session data
     await _sessionService.updateSession(
+      prefix: _selectedPrefix ?? '',
       firstName: _firstNameController.text.trim(),
       middleName: _middleNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
+      suffix: _selectedSuffix ?? '',
       email: _emailController.text.trim(),
       contactNumber: _phoneController.text.trim(),
       username: _usernameController.text.trim(),
@@ -250,6 +258,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               const SizedBox(height: 32),
 
+              // Prefix
+              Text(
+                'Prefix',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedPrefix,
+                hint: const Text('Select prefix (optional)'),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                items: _prefixOptions
+                    .map(
+                      (prefix) => DropdownMenuItem(
+                        value: prefix,
+                        child: Text(prefix),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPrefix = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 20),
+
               // First Name
               Text(
                 'First Name',
@@ -371,6 +425,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return 'Please enter your last name';
                   }
                   return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Suffix
+              Text(
+                'Suffix',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedSuffix,
+                hint: const Text('Select suffix (optional)'),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                items: _suffixOptions
+                    .map(
+                      (suffix) => DropdownMenuItem(
+                        value: suffix,
+                        child: Text(suffix),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSuffix = value;
+                  });
                 },
               ),
 

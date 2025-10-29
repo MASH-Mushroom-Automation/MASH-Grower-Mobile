@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common/custom_button.dart';
+import '../../../core/services/session_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -35,10 +36,15 @@ class ProfileScreen extends StatelessWidget {
 
           final user = authProvider.user!;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
+          return FutureBuilder<Map<String, dynamic>?>(
+            future: _getRegistrationData(),
+            builder: (context, snapshot) {
+              final registrationData = snapshot.data;
+              
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
                 // Profile Header
                 Card(
                   child: Padding(
@@ -89,6 +95,58 @@ class ProfileScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 24),
+
+                // Detailed Registration Information
+                if (registrationData != null) ...[
+                  // Debug information
+                  Card(
+                    color: Colors.blue.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
+                        'Debug: ${registrationData.toString()}',
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Registration Details',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildInfoRow(context, 'Full Name', registrationData['firstName'] != null 
+                            ? '${registrationData['prefix'] ?? ''} ${registrationData['firstName']} ${registrationData['middleName'] ?? ''} ${registrationData['lastName']} ${registrationData['suffix'] ?? ''}'.replaceAll(RegExp(r'\s+'), ' ').trim()
+                            : 'Not provided'),
+                          _buildInfoRow(context, 'Prefix', (registrationData['prefix'] ?? '').toString().isNotEmpty
+                            ? registrationData['prefix']
+                            : 'Not provided'),
+                          _buildInfoRow(context, 'Suffix', (registrationData['suffix'] ?? '').toString().isNotEmpty
+                            ? registrationData['suffix']
+                            : 'Not provided'),
+                          _buildInfoRow(context, 'Contact', (registrationData['contactNumber'] != null && registrationData['contactNumber'].toString().isNotEmpty)
+                            ? '${registrationData['countryCode'] ?? '+63'}${registrationData['contactNumber']}'
+                            : 'Not provided'),
+                          _buildInfoRow(context, 'Username', registrationData['username'] ?? 'Not provided'),
+                          _buildInfoRow(context, 'Region', registrationData['region'] ?? 'Not provided'),
+                          _buildInfoRow(context, 'Province', registrationData['province'] ?? 'Not provided'),
+                          _buildInfoRow(context, 'City', registrationData['city'] ?? 'Not provided'),
+                          _buildInfoRow(context, 'Barangay', registrationData['barangay'] ?? 'Not provided'),
+                          _buildInfoRow(context, 'Street', registrationData['streetAddress'] ?? 'Not provided'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
 
                 // Profile Options
                 Card(
@@ -184,7 +242,44 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           );
+            },
+          );
         },
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>?> _getRegistrationData() async {
+    final sessionService = SessionService();
+    await sessionService.initialize();
+    final data = await sessionService.getRegistrationData();
+    print('🔍 Profile Screen - Retrieved registration data: $data');
+    return data;
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
       ),
     );
   }

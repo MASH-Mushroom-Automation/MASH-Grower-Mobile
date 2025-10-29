@@ -32,7 +32,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFFEF6C00),
       showLogo: false,
       showImage: true,
-      imagePath: 'images/placeholders/800@2x.png',
+      // imagePath: 'images/placeholders/800@2x.png',
     ),
     OnboardingPageData(
       title: 'Automated Systems',
@@ -42,7 +42,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFF1976D2),
       showLogo: false,
       showImage: true,
-      imagePath: 'images/placeholders/800@2x.png',
+      // imagePath: 'images/placeholders/800@2x.png',
     ),
     OnboardingPageData(
       title: 'Data Analytics',
@@ -52,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFF7B1FA2),
       showLogo: false,
       showImage: true,
-      imagePath: 'images/placeholders/800@2x.png',
+      // imagePath: 'images/placeholders/800@2x.png',
     ),
     OnboardingPageData(
       title: 'Expert Support',
@@ -62,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       textColor: const Color(0xFFC62828),
       showLogo: false,
       showImage: true,
-      imagePath: 'images/placeholders/800@2x.png',
+      // imagePath: 'images/placeholders/800@2x.png',
     ),
   ];
 
