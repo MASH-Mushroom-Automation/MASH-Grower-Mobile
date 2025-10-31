@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/utils/validators.dart';
+import '../../../widgets/common/validated_text_field.dart';
 import '../../../providers/registration_provider.dart';
 import '../../auth/login_screen.dart';
 
@@ -27,7 +29,10 @@ class _EmailPageState extends State<EmailPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<RegistrationProvider>();
-    provider.setEmail(_emailController.text.trim());
+
+    // Normalize email before setting it
+    final normalizedEmail = Validators.normalizeEmail(_emailController.text);
+    provider.setEmail(normalizedEmail);
 
     // Send OTP
     final success = await provider.sendOtp();
@@ -129,43 +134,13 @@ class _EmailPageState extends State<EmailPage> {
               const SizedBox(height: 8),
 
               // Email Input
-              TextFormField(
+              ValidatedTextField(
                 controller: _emailController,
+                label: 'Email',
+                hintText: 'Enter email',
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Enter email',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email.';
-                  }
-                  // Check if the email is valid
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Please enter a valid email.';
-                  }
-
-                  return null;
-                },
+                validator: Validators.validateEmail,
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
 
               const SizedBox(height: 16),

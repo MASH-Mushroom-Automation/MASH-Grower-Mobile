@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/utils/validators.dart';
+import '../../../widgets/common/validated_text_field.dart';
 import '../../../providers/registration_provider.dart';
 import '../../../widgets/registration/registration_step_indicator.dart';
 
@@ -126,52 +128,25 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                     ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              // Password
+              ValidatedTextField(
                 controller: _passwordController,
+                label: 'Password',
+                hintText: 'Enter Password',
                 obscureText: _obscurePassword,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
+                validator: Validators.validatePassword,
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey.shade600,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Enter Password',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey.shade600,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password is required';
-                  }
-                  if (!_hasMinLength || !_hasUppercase || !_hasNumber) {
-                    return 'Password does not meet requirements';
-                  }
-                  return null;
-                },
               ),
 
               const SizedBox(height: 20),
@@ -185,52 +160,25 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                     ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              // Confirm Password
+              ValidatedTextField(
                 controller: _confirmPasswordController,
+                label: 'Confirm Password',
+                hintText: 'Enter Password',
                 obscureText: _obscureConfirmPassword,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
+                validator: (value) => Validators.validateConfirmPassword(value, _passwordController.text),
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey.shade600,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Enter Password',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey.shade600,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
-                  }
-                  if (value != _passwordController.text) {
-                    return 'Passwords do not match';
-                  }
-                  return null;
-                },
               ),
 
               const SizedBox(height: 24),

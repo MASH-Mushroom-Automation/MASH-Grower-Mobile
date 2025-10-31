@@ -7,6 +7,7 @@ import 'package:local_auth/local_auth.dart';
 import '../../core/constants/storage_keys.dart';
 import '../../core/utils/logger.dart';
 import '../../core/services/session_service.dart';
+import '../../core/utils/validators.dart';
 import '../../data/models/user_model.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
 import '../../data/datasources/local/auth_local_datasource.dart';
@@ -85,25 +86,28 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      // Normalize email to lowercase
+      final normalizedEmail = Validators.normalizeEmail(email);
+
       // Check if email is registered
       final sessionService = SessionService();
       await sessionService.initialize();
-      
-      final isRegistered = await sessionService.isEmailRegistered(email);
+
+      final isRegistered = await sessionService.isEmailRegistered(normalizedEmail);
       if (!isRegistered) {
         _setError('Email not registered. Please register first.');
         return false;
       }
-      
-      Logger.info('🔓 Login attempt for registered email: $email');
-      
+
+      Logger.info('🔓 Login attempt for registered email: $normalizedEmail');
+
       // Load account data for this email
-      final accountData = await sessionService.getAccountData(email);
+      final accountData = await sessionService.getAccountData(normalizedEmail);
       if (accountData == null) {
         _setError('Account data not found. Please register again.');
         return false;
       }
-      
+
       // Create user from account data
       _user = UserModel(
         id: 'user-${accountData.email}',
@@ -115,21 +119,21 @@ class AuthProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       // Store mock tokens
       await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-access-token');
       await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-refresh-token');
-      
+
       // Load session data
       await sessionService.createSessionFromLogin(
-        email: email,
+        email: normalizedEmail,
         username: accountData.username,
       );
-      
+
       _isAuthenticated = true;
-      Logger.authLogin('Registered User Login - $email');
+      Logger.authLogin('Registered User Login - $normalizedEmail');
       return true;
-      
+
     } catch (e) {
       Logger.error('Email sign in failed: $e');
       _setError('Login failed: ${e.toString()}');
@@ -144,21 +148,24 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      // Normalize email to lowercase
+      final normalizedEmail = Validators.normalizeEmail(email);
+
       // Check if email is already registered
       final sessionService = SessionService();
       await sessionService.initialize();
-      
-      final isAlreadyRegistered = await sessionService.isEmailRegistered(email);
+
+      final isAlreadyRegistered = await sessionService.isEmailRegistered(normalizedEmail);
       if (isAlreadyRegistered) {
         _setError('Email already registered. Please login instead.');
         return false;
       }
-      
-      Logger.info('🔓 Registration attempt for new email: $email');
-      
+
+      Logger.info('🔓 Registration attempt for new email: $normalizedEmail');
+
       // Save registration data
       await sessionService.createSessionFromRegistration(
-        email: email,
+        email: normalizedEmail,
         prefix: '',
         firstName: firstName,
         middleName: '',
@@ -166,18 +173,18 @@ class AuthProvider extends ChangeNotifier {
         suffix: '',
         contactNumber: '',
         countryCode: '+63',
-        username: email.split('@')[0],
+        username: normalizedEmail.split('@')[0],
         region: '',
         province: '',
         city: '',
         barangay: '',
         streetAddress: '',
       );
-      
+
       // Create user with provided data
       _user = UserModel(
-        id: 'user-$email',
-        email: email,
+        id: 'user-$normalizedEmail',
+        email: normalizedEmail,
         firstName: firstName,
         lastName: lastName,
         profileImageUrl: null,
@@ -185,15 +192,15 @@ class AuthProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       // Store mock tokens
       await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-access-token');
       await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-refresh-token');
-      
+
       _isAuthenticated = true;
-      Logger.authLogin('New User Registration - $email');
+      Logger.authLogin('New User Registration - $normalizedEmail');
       return true;
-      
+
     } catch (e) {
       Logger.error('Email sign up failed: $e');
       _setError('Registration failed: ${e.toString()}');

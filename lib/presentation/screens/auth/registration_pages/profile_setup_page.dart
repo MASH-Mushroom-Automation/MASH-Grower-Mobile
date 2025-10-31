@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/utils/validators.dart';
+import '../../../widgets/common/validated_text_field.dart';
 import '../../../providers/registration_provider.dart';
 import '../../../widgets/registration/registration_step_indicator.dart';
 
@@ -178,37 +180,14 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              // First Name
+              ValidatedTextField(
                 controller: _firstNameController,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Enter your first name',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'First name is required';
-                  }
-                  return null;
-                },
+                label: 'First Name',
+                hintText: 'Enter your first name',
+                validator: (value) => Validators.validateName(value, 'First name'),
+                prefixIcon: const Icon(Icons.person_outline),
+                textCapitalization: TextCapitalization.words,
               ),
 
               const SizedBox(height: 20),
@@ -271,37 +250,14 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              // Last Name
+              ValidatedTextField(
                 controller: _lastNameController,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Enter your last name',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Last name is required';
-                  }
-                  return null;
-                },
+                label: 'Last Name',
+                hintText: 'Enter your last name',
+                validator: (value) => Validators.validateName(value, 'Last name'),
+                prefixIcon: const Icon(Icons.person_outline),
+                textCapitalization: TextCapitalization.words,
               ),
 
               const SizedBox(height: 20),
