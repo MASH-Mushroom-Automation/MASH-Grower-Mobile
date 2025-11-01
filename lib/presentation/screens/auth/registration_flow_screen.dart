@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../providers/registration_provider.dart';
 import 'registration_pages/email_page.dart';
-import 'registration_pages/otp_verification_page.dart';
+import 'registration_pages/password_setup_page.dart';
 import 'registration_pages/profile_setup_page.dart';
 import 'registration_pages/account_setup_page.dart';
-import 'registration_pages/password_setup_page.dart';
+import 'registration_pages/review_submit_page.dart';
+import 'registration_pages/otp_verification_page.dart';
 import 'registration_pages/success_page.dart';
 
 class RegistrationFlowScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
   }
 
   void _goToNextPage() {
-    if (_currentPage < 5) {
+    if (_currentPage < 6) { // Changed from 5 to 6 (7 pages total: 0-6)
       setState(() {
         _currentPage++;
       });
@@ -52,14 +53,27 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
     }
   }
 
+  void _goToSpecificPage(int pageIndex) {
+    if (pageIndex >= 0 && pageIndex <= 6) {
+      setState(() {
+        _currentPage = pageIndex;
+      });
+      _pageController.animateToPage(
+        _currentPage,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => RegistrationProvider(),
       child: PopScope(
-        canPop: _currentPage == 0 || _currentPage == 5,
+        canPop: _currentPage == 0 || _currentPage == 6, // Changed from 5 to 6 (success page)
         onPopInvokedWithResult: (didPop, result) {
-          if (!didPop && _currentPage > 0 && _currentPage < 5) {
+          if (!didPop && _currentPage > 0 && _currentPage < 6) {
             _goToPreviousPage();
           }
         },
@@ -70,23 +84,41 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
               children: [
+                // Page 0: Email Collection
                 EmailPage(onNext: _goToNextPage),
-                OtpVerificationPage(
-                  onNext: _goToNextPage,
-                  onBack: _goToPreviousPage,
-                ),
-                ProfileSetupPage(
-                  onNext: _goToNextPage,
-                  onBack: _goToPreviousPage,
-                ),
-                AccountSetupPage(
-                  onNext: _goToNextPage,
-                  onBack: _goToPreviousPage,
-                ),
+                
+                // Page 1: Password Setup
                 PasswordSetupPage(
                   onNext: _goToNextPage,
                   onBack: _goToPreviousPage,
                 ),
+                
+                // Page 2: Profile Setup (includes username)
+                ProfileSetupPage(
+                  onNext: _goToNextPage,
+                  onBack: _goToPreviousPage,
+                ),
+                
+                // Page 3: Account Setup (address, etc.)
+                AccountSetupPage(
+                  onNext: _goToNextPage,
+                  onBack: _goToPreviousPage,
+                ),
+                
+                // Page 4: Review & Submit (NEW - sends data to backend)
+                ReviewSubmitPage(
+                  onNext: _goToNextPage,
+                  onBack: _goToPreviousPage,
+                  onEditStep: _goToSpecificPage,
+                ),
+                
+                // Page 5: Email Verification (6-digit code)
+                OtpVerificationPage(
+                  onNext: _goToNextPage,
+                  onBack: _goToPreviousPage,
+                ),
+                
+                // Page 6: Success
                 const SuccessPage(),
               ],
             ),

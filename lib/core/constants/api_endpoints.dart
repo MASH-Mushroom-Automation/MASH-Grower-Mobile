@@ -7,11 +7,41 @@ class ApiEndpoints {
   static const String devWsUrl = 'ws://localhost:3000/ws';
   static const String prodWsUrl = 'wss://mash-backend.onrender.com/ws';
   
-  // Authentication Endpoints
-  static const String authExchange = '/auth/exchange';
-  static const String authRefresh = '/auth/refresh';
+  // ========== Backend Authentication Endpoints ==========
+  // Registration & Email Verification
+  static const String authRegister = '/auth/register';
+  static const String authVerifyEmail = '/auth/verify-email';
+  static const String authResendVerification = '/auth/resend-verification';
+  
+  // Login & Logout
+  static const String authLogin = '/auth/login';
   static const String authLogout = '/auth/logout';
+  
+  // Token Management
+  static const String authRefresh = '/auth/refresh';
+  static const String authVerify = '/auth/verify';
+  
+  // User Information
   static const String authMe = '/auth/me';
+  
+  // Password Management
+  static const String authForgotPassword = '/auth/forgot-password';
+  static const String authResetPassword = '/auth/reset-password';
+  
+  // OAuth Endpoints
+  static const String authOAuthGoogle = '/auth/oauth/google';
+  static const String authOAuthGithub = '/auth/oauth/github';
+  static const String authOAuthFacebook = '/auth/oauth/facebook';
+  static const String authOAuthCallback = '/auth/oauth/callback';
+  
+  // Legacy Firebase Exchange (to be deprecated)
+  static const String authExchange = '/auth/exchange';
+  
+  // ========== Profile Management Endpoints ==========
+  static const String profile = '/profile';
+  static const String profileAvatar = '/profile/avatar';
+  static const String profilePassword = '/profile/password';
+  static const String profilePreferences = '/profile/preferences';
   
   // Device Endpoints
   static const String devices = '/devices';

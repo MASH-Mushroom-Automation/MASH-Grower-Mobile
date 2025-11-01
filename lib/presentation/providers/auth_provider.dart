@@ -7,8 +7,14 @@ import 'package:local_auth/local_auth.dart';
 import '../../core/constants/storage_keys.dart';
 import '../../core/utils/logger.dart';
 import '../../core/services/session_service.dart';
+import '../../core/services/secure_storage_service.dart';
+import '../../core/network/dio_client.dart';
+import '../../core/network/api_client.dart';
 import '../../core/utils/validators.dart';
 import '../../data/models/user_model.dart';
+import '../../data/models/auth/backend_user_model.dart';
+import '../../data/models/auth/login_request_model.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
 import '../../data/datasources/local/auth_local_datasource.dart';
 
@@ -16,8 +22,10 @@ class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final LocalAuthentication _localAuth = LocalAuthentication();
-  final AuthRemoteDataSource _authRemoteDataSource = AuthRemoteDataSource();
   final AuthLocalDataSource _authLocalDataSource = AuthLocalDataSource();
+  
+  late final AuthRepository _authRepository;
+  BackendUserModel? _backendUser;
 
   UserModel? _user;
   bool _isLoading = false;
@@ -30,7 +38,16 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
 
   AuthProvider() {
+    _initializeAuthRepository();
     _initializeAuth();
+  }
+  
+  void _initializeAuthRepository() {
+    final dioClient = DioClient();
+    final apiClient = ApiClient(dioClient);
+    final authRemoteDataSource = AuthRemoteDataSource(apiClient);
+    final secureStorage = SecureStorageService.instance;
+    _authRepository = AuthRepository(authRemoteDataSource, secureStorage);
   }
 
   Future<void> _initializeAuth() async {
@@ -81,7 +98,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signInWithEmail(String email, String password) async {
+  /// Backend API Login
+  /// 
+  /// Authenticates user with backend API and stores JWT tokens
+  Future<bool> loginWithBackend(String email, String password) async {
     _setLoading(true);
     _clearError();
 
@@ -89,58 +109,71 @@ class AuthProvider extends ChangeNotifier {
       // Normalize email to lowercase
       final normalizedEmail = Validators.normalizeEmail(email);
 
-      // Check if email is registered
-      final sessionService = SessionService();
-      await sessionService.initialize();
+      Logger.info('🔓 Backend Login attempt for: $normalizedEmail');
 
-      final isRegistered = await sessionService.isEmailRegistered(normalizedEmail);
-      if (!isRegistered) {
-        _setError('Email not registered. Please register first.');
-        return false;
-      }
-
-      Logger.info('🔓 Login attempt for registered email: $normalizedEmail');
-
-      // Load account data for this email
-      final accountData = await sessionService.getAccountData(normalizedEmail);
-      if (accountData == null) {
-        _setError('Account data not found. Please register again.');
-        return false;
-      }
-
-      // Create user from account data
-      _user = UserModel(
-        id: 'user-${accountData.email}',
-        email: accountData.email,
-        firstName: accountData.firstName,
-        lastName: accountData.lastName,
-        profileImageUrl: accountData.profileImagePath,
-        role: 'grower',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      // Store mock tokens
-      await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-access-token');
-      await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-refresh-token');
-
-      // Load session data
-      await sessionService.createSessionFromLogin(
+      // Create login request
+      final loginRequest = LoginRequestModel(
         email: normalizedEmail,
-        username: accountData.username,
+        password: password,
       );
 
-      _isAuthenticated = true;
-      Logger.authLogin('Registered User Login - $normalizedEmail');
-      return true;
+      // Call backend API
+      final response = await _authRepository.login(loginRequest);
+
+      if (response.success && response.user != null) {
+        // Store backend user data
+        _backendUser = response.user;
+        
+        // Create user model from backend user
+        _user = UserModel(
+          id: response.user!.id,
+          email: response.user!.email,
+          firstName: response.user!.firstName,
+          lastName: response.user!.lastName,
+          profileImageUrl: response.user!.avatarUrl,
+          role: 'grower',
+          createdAt: response.user!.createdAt,
+          updatedAt: response.user!.updatedAt,
+        );
+
+        // JWT tokens are already stored by AuthRepository
+        _isAuthenticated = true;
+        
+        Logger.authLogin('Backend API Login - $normalizedEmail');
+        Logger.info('✅ User logged in: ${response.user!.displayName}');
+        
+        return true;
+      } else {
+        _setError(response.message);
+        return false;
+      }
 
     } catch (e) {
-      Logger.error('Email sign in failed: $e');
-      _setError('Login failed: ${e.toString()}');
+      Logger.error('❌ Backend login failed', e);
+      
+      // Extract user-friendly error message
+      String errorMessage = 'Login failed. Please check your credentials.';
+      if (e.toString().contains('invalid credentials')) {
+        errorMessage = 'Invalid email or password.';
+      } else if (e.toString().contains('email not verified')) {
+        errorMessage = 'Please verify your email before logging in.';
+      } else if (e.toString().contains('account locked')) {
+        errorMessage = 'Your account has been locked. Please contact support.';
+      } else if (e.toString().contains('network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      _setError(errorMessage);
       return false;
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// OLD Firebase-based login (kept for backward compatibility)
+  Future<bool> signInWithEmail(String email, String password) async {
+    // Redirect to backend login
+    return await loginWithBackend(email, password);
   }
 
   Future<bool> signUpWithEmail(String email, String password, String firstName, String lastName) async {
@@ -314,13 +347,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signOut() async {
+  /// Backend API Logout
+  /// 
+  /// Logs out user and clears JWT tokens
+  Future<void> logout() async {
     _setLoading(true);
     try {
-      // Sign out from Firebase
-      await _firebaseAuth.signOut();
+      Logger.info('🚪 Logging out user...');
       
-      // Clear stored tokens
+      // Call backend logout API
+      await _authRepository.logout();
+      
+      // Sign out from Firebase (if still using it)
+      try {
+        await _firebaseAuth.signOut();
+      } catch (e) {
+        Logger.error('Firebase signOut failed (non-critical)', e);
+      }
+      
+      // Clear stored tokens (done by AuthRepository, but double-check)
       await _secureStorage.delete(key: StorageKeys.accessToken);
       await _secureStorage.delete(key: StorageKeys.refreshToken);
       await _secureStorage.delete(key: StorageKeys.userData);
@@ -332,17 +377,26 @@ class AuthProvider extends ChangeNotifier {
       // Clear local data
       await _authLocalDataSource.clearUserData();
       
+      // Clear state
       _user = null;
+      _backendUser = null;
       _isAuthenticated = false;
       _clearError();
       
       Logger.authLogout();
+      Logger.info('✅ User logged out successfully');
     } catch (e) {
-      Logger.error('Sign out failed: $e');
+      Logger.error('❌ Logout failed', e);
       _setError('Failed to sign out');
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// OLD Firebase-based signOut (kept for backward compatibility)
+  Future<void> signOut() async {
+    // Redirect to backend logout
+    await logout();
   }
 
   Future<void> _exchangeFirebaseToken() async {

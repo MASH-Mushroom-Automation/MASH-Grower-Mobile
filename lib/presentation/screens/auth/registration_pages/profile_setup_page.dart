@@ -26,6 +26,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   final _firstNameController = TextEditingController();
   final _middleNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final List<String> _prefixOptions = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Engr.', 'Prof.'];
   final List<String> _suffixOptions = ['Jr.', 'Sr.', 'III', 'IV', 'PhD', 'MD'];
@@ -42,6 +43,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       _firstNameController.text = provider.firstName;
       _middleNameController.text = provider.middleName;
       _lastNameController.text = provider.lastName;
+      _usernameController.text = provider.username;
       _contactNumberController.text = provider.contactNumber;
       _selectedSuffix = provider.suffix.isNotEmpty ? provider.suffix : null;
     });
@@ -52,6 +54,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     _firstNameController.dispose();
     _middleNameController.dispose();
     _lastNameController.dispose();
+    _usernameController.dispose();
     _contactNumberController.dispose();
     super.dispose();
   }
@@ -64,6 +67,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     provider.setFirstName(_firstNameController.text.trim());
     provider.setMiddleName(_middleNameController.text.trim());
     provider.setLastName(_lastNameController.text.trim());
+    provider.setUsername(_usernameController.text.trim());
     provider.setSuffix(_selectedSuffix ?? '');
     provider.setContactNumber(_contactNumberController.text.trim());
 
@@ -261,6 +265,26 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 validator: (value) => Validators.validateName(value, 'Last name'),
                 prefixIcon: const Icon(Icons.person_outline),
                 textCapitalization: TextCapitalization.words,
+              ),
+
+              const SizedBox(height: 20),
+
+              // Username (REQUIRED for backend)
+              Text(
+                'Username',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade800,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              ValidatedTextField(
+                key: const Key('registration_username_field'),
+                controller: _usernameController,
+                label: 'Username',
+                hintText: 'Alphanumeric only, 3-20 characters',
+                validator: (value) => Validators.validateUsername(value),
+                prefixIcon: const Icon(Icons.alternate_email),
               ),
 
               const SizedBox(height: 20),

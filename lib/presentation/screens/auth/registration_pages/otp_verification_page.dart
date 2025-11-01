@@ -46,7 +46,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     if (otpCode.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter the complete OTP code'),
+          content: Text('Please enter the complete 6-digit verification code'),
           backgroundColor: Colors.red,
         ),
       );
@@ -54,16 +54,20 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     }
 
     final provider = context.read<RegistrationProvider>();
-    provider.setOtp(otpCode);
-
-    final success = await provider.verifyOtp();
+    
+    // Call backend API to verify email with 6-digit code
+    final success = await provider.verifyEmailWithCode(otpCode);
+    
     if (success && mounted) {
+      // Email verified successfully, JWT tokens stored
+      // Navigate to success page or home screen
       widget.onNext();
     } else if (mounted && provider.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(provider.error!),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -71,12 +75,23 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   Future<void> _handleResend() async {
     final provider = context.read<RegistrationProvider>();
-    final success = await provider.resendOtp();
+    
+    // Call backend API to resend verification code
+    final success = await provider.resendEmailVerification();
+    
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('OTP code has been resent'),
+          content: Text('Verification code has been resent to your email'),
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } else if (mounted && provider.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.error!),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -95,15 +110,15 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
             // Step Indicator
             const RegistrationStepIndicatorWithLabels(
-              currentStep: 0,
-              stepLabels: ['Verify', 'Profile', 'Account', 'Password'],
+              currentStep: 5,
+              stepLabels: ['Email', 'Password', 'Profile', 'Review', 'Verify'],
             ),
 
             const SizedBox(height: 40),
 
             // Title
             Text(
-              'Create New Account',
+              'Verify Your Email',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF2D5F4C),
@@ -114,7 +129,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
             const SizedBox(height: 8),
 
             Text(
-              'Fill in your details to register your account',
+              'Enter the 6-digit code we sent to your email',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey.shade600,
                   ),
@@ -123,13 +138,30 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
             const SizedBox(height: 48),
 
-            // OTP Instruction
-            Text(
-              'Check your email for the OTP',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade700,
-                  ),
-              textAlign: TextAlign.center,
+            // Verification Instructions
+            Consumer<RegistrationProvider>(
+              builder: (context, provider, child) {
+                return Column(
+                  children: [
+                    Text(
+                      'We sent a verification code to',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey.shade700,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      provider.email,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF2D5F4C),
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 32),

@@ -3,6 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../utils/logger.dart';
+import '../config/api_config.dart';
 import '../constants/api_endpoints.dart';
 import '../constants/storage_keys.dart';
 
@@ -29,10 +30,10 @@ class DioClient {
     
     // Base options
     dio.options = BaseOptions(
-      baseUrl: _getBaseUrl(),
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      baseUrl: ApiConfig.apiBaseUrl,
+      connectTimeout: ApiConfig.connectTimeout,
+      receiveTimeout: ApiConfig.receiveTimeout,
+      sendTimeout: ApiConfig.sendTimeout,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -48,12 +49,6 @@ class DioClient {
     ]);
 
     return dio;
-  }
-
-  String _getBaseUrl() {
-    // In production, you might want to use environment variables
-    // For now, we'll use the production URL
-    return ApiEndpoints.prodBaseUrl;
   }
 
   // Update base URL (useful for switching between dev/prod)

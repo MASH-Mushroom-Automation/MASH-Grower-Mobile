@@ -102,6 +102,30 @@ class Validators {
     return 'Please enter a valid Philippine phone number';
   }
 
+  // Username validation (for backend API)
+  static String? validateUsername(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Username is required';
+    }
+
+    final trimmed = value.trim();
+
+    if (trimmed.length < 3) {
+      return 'Username must be at least 3 characters long';
+    }
+
+    if (trimmed.length > 20) {
+      return 'Username must not exceed 20 characters';
+    }
+
+    // Only alphanumeric characters, no spaces
+    if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(trimmed)) {
+      return 'Username can only contain letters and numbers (no spaces)';
+    }
+
+    return null; // Valid
+  }
+
   // Email normalization
   static String normalizeEmail(String email) {
     return email.toLowerCase().trim();
