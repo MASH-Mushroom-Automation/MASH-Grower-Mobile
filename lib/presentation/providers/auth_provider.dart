@@ -399,33 +399,34 @@ class AuthProvider extends ChangeNotifier {
     await logout();
   }
 
-  Future<void> _exchangeFirebaseToken() async {
-    try {
-      final firebaseUser = _firebaseAuth.currentUser;
-      if (firebaseUser == null) return;
+  // DEPRECATED: Old Firebase token exchange (no longer used with backend API)
+  // Future<void> _exchangeFirebaseToken() async {
+  //   try {
+  //     final firebaseUser = _firebaseAuth.currentUser;
+  //     if (firebaseUser == null) return;
 
-      final token = await firebaseUser.getIdToken();
-      if (token == null) {
-        _setError('Failed to get authentication token');
-        return;
-      }
-      final userData = await _authRemoteDataSource.exchangeToken(token);
-      
-      // Store tokens
-      await _secureStorage.write(key: StorageKeys.accessToken, value: userData['access_token']);
-      await _secureStorage.write(key: StorageKeys.refreshToken, value: userData['refresh_token']);
-      
-      // Store user data
-      final user = UserModel.fromJson(userData['user']);
-      await _authLocalDataSource.saveUser(user);
-      _user = user;
-      _isAuthenticated = true;
-      
-    } catch (e) {
-      Logger.error('Token exchange failed: $e');
-      _setError('Authentication failed');
-    }
-  }
+  //     final token = await firebaseUser.getIdToken();
+  //     if (token == null) {
+  //       _setError('Failed to get authentication token');
+  //       return;
+  //     }
+  //     // OLD: final userData = await _authRemoteDataSource.exchangeToken(token);
+  //     
+  //     // Store tokens
+  //     // await _secureStorage.write(key: StorageKeys.accessToken, value: userData['access_token']);
+  //     // await _secureStorage.write(key: StorageKeys.refreshToken, value: userData['refresh_token']);
+  //     
+  //     // Store user data
+  //     // final user = UserModel.fromJson(userData['user']);
+  //     // await _authLocalDataSource.saveUser(user);
+  //     // _user = user;
+  //     // _isAuthenticated = true;
+  //     
+  //   } catch (e) {
+  //     Logger.error('Token exchange failed: $e');
+  //     _setError('Authentication failed');
+  //   }
+  // }
 
   Future<void> _loadUserFromStorage() async {
     try {
@@ -439,24 +440,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> refreshToken() async {
-    try {
-      final refreshToken = await _secureStorage.read(key: StorageKeys.refreshToken);
-      if (refreshToken == null) {
-        await signOut();
-        return;
-      }
+  // DEPRECATED: Old manual token refresh (now handled by DioClient interceptor)
+  // Future<void> refreshToken() async {
+  //   try {
+  //     final refreshToken = await _secureStorage.read(key: StorageKeys.refreshToken);
+  //     if (refreshToken == null) {
+  //       await signOut();
+  //       return;
+  //     }
 
-      final newTokens = await _authRemoteDataSource.refreshToken(refreshToken);
-      await _secureStorage.write(key: StorageKeys.accessToken, value: newTokens['access_token']);
-      await _secureStorage.write(key: StorageKeys.refreshToken, value: newTokens['refresh_token']);
-      
-      Logger.authTokenRefresh();
-    } catch (e) {
-      Logger.error('Token refresh failed: $e');
-      await signOut();
-    }
-  }
+  //     // OLD: final newTokens = await _authRemoteDataSource.refreshToken(refreshToken);
+  //     // await _secureStorage.write(key: StorageKeys.accessToken, value: newTokens['access_token']);
+  //     // await _secureStorage.write(key: StorageKeys.refreshToken, value: newTokens['refresh_token']);
+  //     
+  //     // Logger.authTokenRefresh();
+  //   } catch (e) {
+  //     Logger.error('Token refresh failed: $e');
+  //     await signOut();
+  //   }
+  // }
 
   void _setLoading(bool loading) {
     _isLoading = loading;
