@@ -145,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 // Email Input
                 ValidatedTextField(
+                  key: const Key('login_email_field'),
                   controller: _emailController,
                   label: 'Email',
                   hintText: 'Enter email',
@@ -167,6 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 // Password Input
                 ValidatedTextField(
+                  key: const Key('login_password_field'),
                   controller: _passwordController,
                   label: 'Password',
                   hintText: 'Enter Password',

@@ -130,6 +130,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
               const SizedBox(height: 8),
               // Password
               ValidatedTextField(
+                key: const Key('registration_password_field'),
                 controller: _passwordController,
                 label: 'Password',
                 hintText: 'Enter Password',
@@ -162,6 +163,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
               const SizedBox(height: 8),
               // Confirm Password
               ValidatedTextField(
+                key: const Key('registration_confirm_password_field'),
                 controller: _confirmPasswordController,
                 label: 'Confirm Password',
                 hintText: 'Enter Password',

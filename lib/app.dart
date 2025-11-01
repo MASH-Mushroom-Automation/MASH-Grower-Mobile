@@ -56,14 +56,16 @@ class _AppState extends State<App> {
     });
   }
 
+  void _completeOnboarding() {
+    setState(() {
+      _onboardingCompleted = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_onboardingChecked) {
       return const SplashScreen();
-    }
-
-    if (!_onboardingCompleted) {
-      return const OnboardingScreen();
     }
 
     return Consumer<AuthProvider>(
@@ -71,6 +73,10 @@ class _AppState extends State<App> {
         // Show splash screen while checking authentication
         if (authProvider.isLoading) {
           return const SplashScreen();
+        }
+
+        if (!_onboardingCompleted) {
+          return OnboardingScreen(onCompleted: _completeOnboarding);
         }
 
         // Show login screen if not authenticated

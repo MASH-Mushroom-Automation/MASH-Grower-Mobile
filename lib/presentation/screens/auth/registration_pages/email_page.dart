@@ -135,6 +135,7 @@ class _EmailPageState extends State<EmailPage> {
 
               // Email Input
               ValidatedTextField(
+                key: const Key('registration_email_field'),
                 controller: _emailController,
                 label: 'Email',
                 hintText: 'Enter email',

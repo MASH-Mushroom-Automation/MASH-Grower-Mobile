@@ -182,6 +182,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               const SizedBox(height: 8),
               // First Name
               ValidatedTextField(
+                key: const Key('registration_firstname_field'),
                 controller: _firstNameController,
                 label: 'First Name',
                 hintText: 'Enter your first name',
@@ -213,6 +214,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               ),
               const SizedBox(height: 8),
               TextFormField(
+                key: const Key('registration_middlename_field'),
                 controller: _middleNameController,
                 style: const TextStyle(
                   color: Colors.black87,
@@ -252,6 +254,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               const SizedBox(height: 8),
               // Last Name
               ValidatedTextField(
+                key: const Key('registration_lastname_field'),
                 controller: _lastNameController,
                 label: 'Last Name',
                 hintText: 'Enter your last name',
@@ -321,87 +324,88 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               const SizedBox(height: 20),
 
               // Contact Number
-              // Row(
-              //   children: [
-              //     Text(
-              //       'Contact Number',
-              //       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              //             fontWeight: FontWeight.w500,
-              //             color: Colors.grey.shade800,
-              //           ),
-              //     ),
-              //     const SizedBox(width: 4),
-              //     Text(
-              //       '(Optional)',
-              //       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              //             color: Colors.grey.shade500,
-              //           ),
-              //     ),
-              //   ],
-              // ),
-              // const SizedBox(height: 8),
-              // Row(
-              //   children: [
-              //     Container(
-              //       width: 80,
-              //       height: 56,
-              //       decoration: BoxDecoration(
-              //         color: Colors.white,
-              //         border: Border.all(color: Colors.grey.shade300),
-              //         borderRadius: BorderRadius.circular(12),
-              //       ),
-              //       child: Center(
-              //         child: Text(
-              //           '+63',
-              //           style: TextStyle(
-              //             fontSize: 16,
-              //             color: Colors.grey.shade700,
-              //           ),
-              //         ),
-              //       ),
-              //     ),
-              //     const SizedBox(width: 12),
-              //     Expanded(
-              //       child: TextFormField(
-              //         controller: _contactNumberController,
-              //         keyboardType: TextInputType.phone,
-              //         style: const TextStyle(
-              //           color: Colors.black87,
-              //           fontSize: 16,
-              //         ),
-              //         decoration: InputDecoration(
-              //           hintText: 'Enter your number',
-              //           hintStyle: TextStyle(color: Colors.grey.shade400),
-              //           filled: true,
-              //           fillColor: Colors.white,
-              //           border: OutlineInputBorder(
-              //             borderRadius: BorderRadius.circular(12),
-              //             borderSide: BorderSide(color: Colors.grey.shade300),
-              //           ),
-              //           enabledBorder: OutlineInputBorder(
-              //             borderRadius: BorderRadius.circular(12),
-              //             borderSide: BorderSide(color: Colors.grey.shade300),
-              //           ),
-              //           focusedBorder: OutlineInputBorder(
-              //             borderRadius: BorderRadius.circular(12),
-              //             borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-              //           ),
-              //           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              //         ),
-              //         inputFormatters: [
-              //           FilteringTextInputFormatter.digitsOnly,
-              //           LengthLimitingTextInputFormatter(10),
-              //         ],
-              //         validator: (value) {
-              //           if (value != null && value.isNotEmpty && value.length != 10) {
-              //             return 'Please enter a valid 10-digit number';
-              //           }
-              //           return null;
-              //         },
-              //       ),
-              //     ),
-              //   ],
-              // ),
+              Row(
+                children: [
+                  Text(
+                    'Contact Number',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade800,
+                        ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '(Optional)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '+63',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      key: const Key('registration_phone_field'),
+                      controller: _contactNumberController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter your number',
+                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(10),
+                      ],
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty && value.length != 10) {
+                          return 'Please enter a valid 10-digit number';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
 
               SizedBox(height: MediaQuery.of(context).size.height * 0.15),
 
