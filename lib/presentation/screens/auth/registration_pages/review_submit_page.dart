@@ -66,8 +66,8 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
 
                 // Step Indicator
                 const RegistrationStepIndicatorWithLabels(
-                  currentStep: 4,
-                  stepLabels: ['Email', 'Password', 'Profile', 'Review', 'Verify'],
+                  currentStep: 5,
+                  stepLabels: ['Verify', 'Profile', 'Account', 'Password', 'Review'],
                 ),
 
                 const SizedBox(height: 32),
@@ -110,7 +110,7 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                 // Personal Information Card
                 _buildSectionCard(
                   title: 'Personal Information',
-                  icon: Icons.person,
+                  icon: Icons.person ,
                   children: [
                     _buildInfoRow('First Name', provider.firstName, onEdit: () => widget.onEditStep(2)),
                     if (provider.middleName.isNotEmpty)
@@ -175,14 +175,14 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          side: const BorderSide(color: Color(0xFF8B4513)),
+                          side: const BorderSide(color: Color.fromARGB(255, 14, 94, 25)),
                         ),
                         child: const Text(
                           'Back',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF8B4513),
+                            color: Color.fromARGB(255, 14, 94, 25),
                           ),
                         ),
                       ),
@@ -196,7 +196,7 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B4513),
+                          backgroundColor: const Color.fromARGB(255, 18, 66, 9),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -259,7 +259,7 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(icon, color: const Color(0xFF8B4513), size: 24),
+                Icon(icon, color: const Color.fromARGB(255, 14, 94, 25), size: 24),
                 const SizedBox(width: 12),
                 Text(
                   title,
@@ -324,7 +324,7 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                 child: Icon(
                   Icons.edit,
                   size: 18,
-                  color: const Color(0xFF8B4513).withOpacity(0.7),
+                  color: const Color.fromARGB(255, 25, 138, 40).withOpacity(0.7),
                 ),
               ),
             ),

@@ -84,23 +84,30 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
               children: [
+
+                //First page after email collection must be otp_verification_page.dart
+                //OtpVerificationPage(
+                 // onNext: _goToNextPage,
+                 // onBack: _goToPreviousPage,
+               // ),
+
                 // Page 0: Email Collection
                 EmailPage(onNext: _goToNextPage),
                 
-                // Page 1: Password Setup
-                PasswordSetupPage(
+                // Page 1: Profile Setup
+                  ProfileSetupPage(
                   onNext: _goToNextPage,
                   onBack: _goToPreviousPage,
                 ),
                 
-                // Page 2: Profile Setup (includes username)
-                ProfileSetupPage(
+                // Page 2: Account Setup (includes username)
+              AccountSetupPage(
                   onNext: _goToNextPage,
                   onBack: _goToPreviousPage,
                 ),
                 
-                // Page 3: Account Setup (address, etc.)
-                AccountSetupPage(
+                // Page 3: Password Setup (address, etc.)
+                 PasswordSetupPage(
                   onNext: _goToNextPage,
                   onBack: _goToPreviousPage,
                 ),

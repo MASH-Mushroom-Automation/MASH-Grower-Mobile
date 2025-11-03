@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/sensor_provider.dart';
 import '../../providers/device_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
-import '../../core/config/theme_config.dart';
+import '../../../core/config/theme_config.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});

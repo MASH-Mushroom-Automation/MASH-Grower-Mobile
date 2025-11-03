@@ -92,7 +92,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
               // Step Indicator
               const RegistrationStepIndicatorWithLabels(
                 currentStep: 3,
-                stepLabels: ['Verify', 'Profile', 'Account', 'Password'],
+                stepLabels: ['Verify', 'Profile', 'Account', 'Password', 'Review'],
               ),
 
               const SizedBox(height: 32),

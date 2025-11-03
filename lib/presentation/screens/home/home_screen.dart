@@ -381,36 +381,61 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // Sensor Status Grid - Improved UX with larger cards
-                GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1,
-                  children: [
-                    _buildSensorStatusCard(
-                      icon: Icons.thermostat,
-                      label: 'Temperature',
-                      status: '1 Sensor active',
-                    ),
-                    _buildSensorStatusCard(
-                      icon: Icons.water_drop,
-                      label: 'Humidity',
-                      status: '1 Sensor active',
-                    ),
-                    _buildSensorStatusCard(
-                      icon: Icons.air,
-                      label: 'Fan',
-                      status: '1 Sensor active',
-                    ),
-                    // _buildSensorStatusCard(
-                    //   icon: Icons.opacity,
-                    //   label: 'Irrigation',
-                    //   status: '1 Sensor active',
-                    // ),
-                  ],
+                // Sensor Status Grid - responsive layout to avoid overflow
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Choose 2 columns on narrow widths, otherwise 3
+                    final width = constraints.maxWidth;
+                    final crossAxis = width < 600 ? 2 : 3;
+
+                    // Estimate item size and compute a childAspectRatio that
+                    // keeps cards a bit taller to avoid vertical overflow.
+                    // use slightly smaller gaps to match design and calculate
+                    // a compact card size
+                    final spacing = 12 * (crossAxis - 1);
+                    final itemWidth = (width - spacing) / crossAxis;
+                    // target item height (approx) - increase to give room for 2-line subHeader
+                    const itemHeight = 160.0;
+                    final childAspectRatio = itemWidth / itemHeight;
+
+                    return GridView.count(
+                      crossAxisCount: crossAxis,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      // allow taller cards on narrow screens by lowering the clamp
+                      childAspectRatio: childAspectRatio.clamp(0.5, 2.0),
+                      children: [
+                        _buildSensorStatusCard(
+                          icon: Icons.thermostat,
+                          label: 'Chamber Sensor',
+                          subHeader: 'Temperature • Humidity • CO2',
+                          status: '1 Sensor active',
+                        ),
+                        _buildSensorStatusCard(
+                          icon: Icons.water_drop,
+                          label: 'Humidifier',
+                          status: '1 Sensor active',
+                        ),
+                        _buildSensorStatusCard(
+                          icon: Icons.air,
+                          label: 'Exhaust Fan',
+                          status: '1 Sensor active',
+                        ),
+                        _buildSensorStatusCard(
+                          icon: Icons.blur_on,
+                          label: 'Blower Fan',
+                          status: '1 Device active',
+                        ),
+                        // _buildSensorStatusCard(
+                        //   icon: Icons.opacity,
+                        //   label: 'Irrigation',
+                        //   status: '1 Sensor active',
+                        // ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -565,35 +590,64 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSensorStatusCard({
     required IconData icon,
     required String label,
+    String? subHeader,
     required String status,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF3FBF3), // very light green background
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE6F4EA)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: const Color.fromRGBO(0, 0, 0, 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
+      // Let the content size naturally; reduce vertical padding and spacing
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: const Color(0xFF2D5F4C), size: 32),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E8),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: const Color(0xFF2D5F4C), size: 20),
+          ),
           const SizedBox(height: 8),
           Text(
             label,
+            textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
               color: Color(0xFF2D5F4C),
             ),
           ),
-          const SizedBox(height: 4),
+            if (subHeader != null) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  subHeader,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF4CAF50),
+                  ),
+                ),
+              ),
+            ],
+          const SizedBox(height: 6),
           Text(
             status,
             textAlign: TextAlign.center,

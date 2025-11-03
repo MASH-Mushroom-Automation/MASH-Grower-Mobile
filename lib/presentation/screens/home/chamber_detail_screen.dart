@@ -13,6 +13,7 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   bool _co2SensorOn = true;
   bool _fanOn = true;
   bool _humidifierOn = true;
+  bool _blowerFanOn = true;
   bool _ledOn = true;
   
   // Mode selection
@@ -381,34 +382,52 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
             
             const SizedBox(height: 24),
             
-            // Sensor Control Cards
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.9,
-              children: [
-                _buildSensorControlCard(
-                  icon: Icons.thermostat,
-                  label: 'Temperature',
-                  value: '23°C',
-                  isOn: _tempSensorOn,
-                ),
-                _buildSensorControlCard(
-                  icon: Icons.water_drop,
-                  label: 'Humidity',
-                  value: '54%',
-                  isOn: _humiditySensorOn,
-                ),
-                _buildSensorControlCard(
-                  icon: Icons.air,
-                  label: 'CO2',
-                  value: 'Current: ${_currentCO2.toInt()}ppm',
-                  isOn: _co2SensorOn,
-                ),
-              ],
+            // Sensor Control Cards - responsive grid
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final crossAxis = width < 600 ? 2 : 3;
+                final spacing = 12 * (crossAxis - 1);
+                final itemWidth = (width - spacing) / crossAxis;
+                // reduce target height by ~20% to make cards smaller
+                const itemHeight = 112.0; // 140 * 0.8
+                final childAspectRatio = (itemWidth / itemHeight).clamp(0.5, 2.0);
+
+                return GridView.count(
+                  crossAxisCount: crossAxis,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: childAspectRatio,
+                  children: [
+                    _buildSensorControlCard(
+                      icon: Icons.thermostat,
+                      label: 'Temperature',
+                      value: '23°C',
+                      isOn: _tempSensorOn,
+                    ),
+                    _buildSensorControlCard(
+                      icon: Icons.thermostat,
+                      label: 'Temperature',
+                      value: '23°C',
+                      isOn: _tempSensorOn,
+                    ),
+                    _buildSensorControlCard(
+                      icon: Icons.water_drop,
+                      label: 'Humidity',
+                      value: '54%',
+                      isOn: _humiditySensorOn,
+                    ),
+                    _buildSensorControlCard(
+                      icon: Icons.air,
+                      label: 'CO2',
+                      value: 'Current: ${_currentCO2.toInt()}ppm',
+                      isOn: _co2SensorOn,
+                    ),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 24),
@@ -434,46 +453,68 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
             
             const SizedBox(height: 24),
 
-            // Actuator Control Cards
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.75,
-              children: [
-                _buildActuatorControlCard(
-                  icon: Icons.air,
-                  label: 'Fans',
-                  isOn: _fanOn,
-                  onToggle: (value) {
-                    setState(() {
-                      _fanOn = value;
-                    });
-                  },
-                ),
-                _buildActuatorControlCard(
-                  icon: Icons.water_drop,
-                  label: 'Humidifier',
-                  isOn: _humidifierOn,
-                  onToggle: (value) {
-                    setState(() {
-                      _humidifierOn = value;
-                    });
-                  },
-                ),
-                _buildActuatorControlCard(
-                  icon: Icons.light,
-                  label: 'LED',
-                  isOn: _ledOn,
-                  onToggle: (value) {
-                    setState(() {
-                      _ledOn = value;
-                    });
-                  },
-                ),
-              ],
+            // Actuator Control Cards - responsive grid
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final crossAxis = width < 600 ? 2 : 3;
+                final spacing = 1 * (crossAxis - 1);
+                final itemWidth = (width - spacing) / crossAxis;
+                // reduced by ~20%, now make actuators 10% smaller further
+                const itemHeight = 180.0; // 120 * 0.9
+                final childAspectRatio = (itemWidth / itemHeight).clamp(0.5, 2.0);
+
+                return GridView.count(
+                  crossAxisCount: crossAxis,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: childAspectRatio,
+                  children: [
+                    _buildActuatorControlCard(
+                      icon: Icons.air,
+                      label: 'Fans',
+                      isOn: _fanOn,
+                      onToggle: (value) {
+                        setState(() {
+                          _fanOn = value;
+                        });
+                      },
+                    ),
+                    _buildActuatorControlCard(
+                      icon: Icons.water_drop,
+                      label: 'Humidifier',
+                      isOn: _humidifierOn,
+                      onToggle: (value) {
+                        setState(() {
+                          _humidifierOn = value;
+                        });
+                      },
+                    ),
+                    _buildActuatorControlCard(
+                      icon: Icons.air_rounded,
+                      label: 'Blower Fan',
+                      isOn: _blowerFanOn,
+                      onToggle: (value) {
+                        setState(() {
+                          _blowerFanOn = value;
+                        });
+                      },
+                    ),
+                    _buildActuatorControlCard(
+                      icon: Icons.light,
+                      label: 'LED',
+                      isOn: _ledOn,
+                      onToggle: (value) {
+                        setState(() {
+                          _ledOn = value;
+                        });
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
             // 
           ],
@@ -482,43 +523,7 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
     );
   }
 
-  Widget _buildStatusCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E8),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Note: _buildStatusCard was removed because it's not currently used.
 
   Widget _buildSensorControlCard({
     required IconData icon,
@@ -528,44 +533,44 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
     bool isDisabled = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12), // reduced ~20%
       decoration: BoxDecoration(
-        color: isDisabled 
-            ? Colors.grey.shade200 
+        color: isDisabled
+            ? Colors.grey.shade200
             : const Color(0xFFE8F5E8),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
             child: Icon(
-              icon, 
-              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C), 
-              size: 32,
+              icon,
+              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
+              size: 26, // reduced from 32
             ),
           ),
-          
+
           Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12, // reduced ~20%
               fontWeight: FontWeight.w600,
               color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
             ),
           ),
-          
+
           Text(
             value,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10, // reduced ~20%
               color: Colors.grey.shade700,
             ),
           ),
@@ -582,58 +587,58 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
     bool isDisabled = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12), // reduced ~20%
       decoration: BoxDecoration(
-        color: isDisabled 
-            ? Colors.grey.shade200 
+        color: isDisabled
+            ? Colors.grey.shade200
             : const Color(0xFFE8F5E8),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
             child: Icon(
-              icon, 
-              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C), 
-              size: 28,
+              icon,
+              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
+              size: 22, // smaller
             ),
           ),
-          
-          const SizedBox(height: 8),
-          
+
+          const SizedBox(height: 6),
+
           Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 11, // reduced
               fontWeight: FontWeight.w600,
               color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
             ),
           ),
-          
-          const SizedBox(height: 8),
-          
+
+          const SizedBox(height: 6),
+
           Column(
             children: [
               Text(
                 isDisabled ? 'DISABLED' : (isOn ? 'ACTIVE' : 'INACTIVE'),
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 9, // slightly smaller
                   fontWeight: FontWeight.bold,
-                  color: isDisabled 
-                      ? Colors.grey 
+                  color: isDisabled
+                      ? Colors.grey
                       : (isOn ? const Color(0xFF4CAF50) : Colors.grey),
                 ),
               ),
               Transform.scale(
-                scale: 0.8,
+                scale: 0.75,
                 child: Switch(
                   value: isOn,
                   onChanged: isDisabled ? null : onToggle,
