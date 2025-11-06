@@ -24,10 +24,7 @@ class ProfileSetupPage extends StatefulWidget {
 class _ProfileSetupPageState extends State<ProfileSetupPage> {
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
-  final _middleNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  final _usernameController = TextEditingController();
-  final _contactNumberController = TextEditingController();
   
 
   @override
@@ -37,21 +34,14 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<RegistrationProvider>();
       _firstNameController.text = provider.firstName;
-      _middleNameController.text = provider.middleName;
       _lastNameController.text = provider.lastName;
-      _usernameController.text = provider.username;
-      _contactNumberController.text = provider.contactNumber;
-      
     });
   }
 
   @override
   void dispose() {
     _firstNameController.dispose();
-    _middleNameController.dispose();
     _lastNameController.dispose();
-    _usernameController.dispose();
-    _contactNumberController.dispose();
     super.dispose();
   }
 
@@ -60,10 +50,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
     final provider = context.read<RegistrationProvider>();
     provider.setFirstName(_firstNameController.text.trim());
-    provider.setMiddleName(_middleNameController.text.trim());
     provider.setLastName(_lastNameController.text.trim());
-    provider.setUsername(_usernameController.text.trim());
-    provider.setContactNumber(_contactNumberController.text.trim());
 
     widget.onNext();
   }
@@ -84,7 +71,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               // Step Indicator
               const RegistrationStepIndicatorWithLabels(
                 currentStep: 1,
-                stepLabels: ['Verify', 'Profile', 'Account', 'Password', 'Verify'],
+                stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
               ),
 
               const SizedBox(height: 32),
@@ -114,15 +101,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
  
 
               // First Name
-              Text(
-                'First Name',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              // First Name
               ValidatedTextField(
                 key: const Key('registration_firstname_field'),
                 controller: _firstNameController,
@@ -135,65 +113,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
               const SizedBox(height: 20),
 
-              // Middle Name
-              Row(
-                children: [
-                  Text(
-                    'Middle Name',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade800,
-                        ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '(Optional)',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade500,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                key: const Key('registration_middlename_field'),
-                controller: _middleNameController,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Enter your middle name',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Last Name
-              Text(
-                'Last Name',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
-                    ),
-              ),
-              const SizedBox(height: 8),
               // Last Name
               ValidatedTextField(
                 key: const Key('registration_lastname_field'),
@@ -205,115 +124,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 textCapitalization: TextCapitalization.words,
               ),
 
-              const SizedBox(height: 20),
-
-              // Username (REQUIRED for backend)
-              Text(
-                'Username',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              ValidatedTextField(
-                key: const Key('registration_username_field'),
-                controller: _usernameController,
-                label: 'Username',
-                hintText: 'Alphanumeric only, 3-20 characters',
-                validator: (value) => Validators.validateUsername(value),
-                prefixIcon: const Icon(Icons.alternate_email),
-              ),
-
-              const SizedBox(height: 20),
-
- 
-
-              // Contact Number
-              Row(
-                children: [
-                  Text(
-                    'Contact Number',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade800,
-                        ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '(Optional)',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade500,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '+63',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      key: const Key('registration_phone_field'),
-                      controller: _contactNumberController,
-                      keyboardType: TextInputType.phone,
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 16,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Enter your number',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(10),
-                      ],
-                      validator: (value) {
-                        if (value != null && value.isNotEmpty && value.length != 10) {
-                          return 'Please enter a valid 10-digit number';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.3),
 
               // Navigation Buttons
               Row(

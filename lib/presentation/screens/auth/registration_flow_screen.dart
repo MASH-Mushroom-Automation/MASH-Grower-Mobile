@@ -7,7 +7,6 @@ import 'registration_pages/password_setup_page.dart';
 import 'registration_pages/profile_setup_page.dart';
 import 'registration_pages/account_setup_page.dart';
 import 'registration_pages/review_submit_page.dart';
-import 'registration_pages/otp_verification_page.dart';
 import 'registration_pages/success_page.dart';
 
 class RegistrationFlowScreen extends StatefulWidget {
@@ -28,7 +27,7 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
   }
 
   void _goToNextPage() {
-    if (_currentPage < 6) { // Changed from 5 to 6 (7 pages total: 0-6)
+    if (_currentPage < 5) { // 6 pages total: 0-5 (removed OTP page)
       setState(() {
         _currentPage++;
       });
@@ -54,7 +53,7 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
   }
 
   void _goToSpecificPage(int pageIndex) {
-    if (pageIndex >= 0 && pageIndex <= 6) {
+    if (pageIndex >= 0 && pageIndex <= 5) {
       setState(() {
         _currentPage = pageIndex;
       });
@@ -71,9 +70,9 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
     return ChangeNotifierProvider(
       create: (_) => RegistrationProvider(),
       child: PopScope(
-        canPop: _currentPage == 0 || _currentPage == 6, // Changed from 5 to 6 (success page)
+        canPop: _currentPage == 0 || _currentPage == 5, // success page
         onPopInvokedWithResult: (didPop, result) {
-          if (!didPop && _currentPage > 0 && _currentPage < 6) {
+          if (!didPop && _currentPage > 0 && _currentPage < 5) {
             _goToPreviousPage();
           }
         },
@@ -112,20 +111,14 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
                   onBack: _goToPreviousPage,
                 ),
                 
-                // Page 4: Review & Submit (NEW - sends data to backend)
+                // Page 4: Review & Submit (sends data to backend)
                 ReviewSubmitPage(
                   onNext: _goToNextPage,
                   onBack: _goToPreviousPage,
                   onEditStep: _goToSpecificPage,
                 ),
                 
-                // Page 5: Email Verification (6-digit code)
-                OtpVerificationPage(
-                  onNext: _goToNextPage,
-                  onBack: _goToPreviousPage,
-                ),
-                
-                // Page 6: Success
+                // Page 5: Success (OTP verification bypassed)
                 const SuccessPage(),
               ],
             ),

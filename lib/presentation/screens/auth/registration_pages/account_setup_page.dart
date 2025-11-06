@@ -252,7 +252,7 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
               // Step Indicator
               const RegistrationStepIndicatorWithLabels(
                 currentStep: 2,
-                stepLabels: ['Verify', 'Profile', 'Account', 'Password', 'Review'],
+                stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
               ),
 
               const SizedBox(height: 32),

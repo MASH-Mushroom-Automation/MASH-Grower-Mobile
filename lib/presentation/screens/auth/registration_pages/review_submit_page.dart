@@ -66,8 +66,8 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
 
                 // Step Indicator
                 const RegistrationStepIndicatorWithLabels(
-                  currentStep: 5,
-                  stepLabels: ['Verify', 'Profile', 'Account', 'Password', 'Review'],
+                  currentStep: 4,
+                  stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
                 ),
 
                 const SizedBox(height: 32),

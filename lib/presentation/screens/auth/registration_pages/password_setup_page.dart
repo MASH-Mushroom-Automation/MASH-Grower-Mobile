@@ -92,7 +92,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
               // Step Indicator
               const RegistrationStepIndicatorWithLabels(
                 currentStep: 3,
-                stepLabels: ['Verify', 'Profile', 'Account', 'Password', 'Review'],
+                stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
               ),
 
               const SizedBox(height: 32),
@@ -120,15 +120,6 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
               const SizedBox(height: 40),
 
               // Password
-              Text(
-                'Password',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              // Password
               ValidatedTextField(
                 key: const Key('registration_password_field'),
                 controller: _passwordController,
@@ -152,15 +143,6 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
 
               const SizedBox(height: 20),
 
-              // Confirm Password
-              Text(
-                'Confirm Password',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
-                    ),
-              ),
-              const SizedBox(height: 8),
               // Confirm Password
               ValidatedTextField(
                 key: const Key('registration_confirm_password_field'),
