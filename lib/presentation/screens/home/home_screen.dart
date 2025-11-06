@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../../core/services/session_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/device_provider.dart';
 import '../../widgets/home/user_header.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import 'chamber_detail_screen.dart';
-import 'user_settings_screen.dart';
-import '../devices/wifi_device_connection_screen.dart';
-import '../devices/devices_view_screen.dart';
-import '../analytics/analytics_view_screen.dart';
 import '../notifications/notifications_screen.dart';
+import 'user_settings_screen.dart';
+import '../devices/direct_device_connection_screen.dart';
+import '../profile/profile_screen.dart';
+import '../automation/ai_automation_screen.dart';
+import '../analytics/analytics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,48 +22,25 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentNavIndex = 0;
-  bool _hasDevice = false; // Toggle this to test different states
+  
+  // Mock data - replace with actual data from backend
   bool _isConnecting = false;
   bool _isDeviceOn = true; // Device power state
-  final SessionService _sessionService = SessionService();
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeSession();
-    _checkDeviceStatus();
-  }
+  void _handleConnect() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const DirectDeviceConnectionScreen()),
+    );
 
-  void _initializeSession() async {
-    await _sessionService.initialize();
-    print('🔍 Home Screen - Session initialized: ${_sessionService.currentSession?.toJson()}');
+    // Refresh UI after connection
     if (mounted) {
       setState(() {});
     }
   }
 
-  void _checkDeviceStatus() {
-    // TODO: Backend Integration - Check if user has connected devices
-    // final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-    // setState(() {
-    //   _hasDevice = deviceProvider.devices.isNotEmpty;
-    // });
-  }
-
-  void _handleConnect() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const WiFiDeviceConnectionScreen()),
-    );
-
-    // After returning from connection screen, check if device was added
-    setState(() {
-      _hasDevice = true; // TODO: Check actual device status from backend
-    });
-  }
-
   void _handleAddNewDevice() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const WiFiDeviceConnectionScreen()),
+      MaterialPageRoute(builder: (_) => const DirectDeviceConnectionScreen()),
     );
   }
 
@@ -133,33 +113,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
           // User Header
-          UserHeader(
-            userName: _sessionService.currentSession?.fullName ?? 'Guest',
-            subtitle: _hasDevice
-                ? 'You have 1 device actively monitoring'
-                : 'Please connect your device first.',
-            avatarUrl: _sessionService.currentSession?.profileImagePath,
-            onNotificationTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          Consumer<DeviceProvider>(
+            builder: (context, deviceProvider, child) {
+              return UserHeader(
+                userName: user != null ? '${user.firstName} ${user.lastName}' : 'Guest',
+                subtitle: deviceProvider.isConnected
+                    ? 'You have 1 device actively monitoring'
+                    : 'Please connect your device first.',
+                avatarUrl: user?.profileImageUrl,
+                onNotificationTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                  );
+                },
               );
             },
           ),
           
           // Main Content
           Expanded(
-            child: _currentNavIndex == 0
-                ? (_hasDevice ? _buildDashboard() : _buildNoDeviceState())
-                : _currentNavIndex == 1
-                    ? _buildDevicesView()
-                    : _currentNavIndex == 2
-                        ? _buildAnalyticsView()
-                        : const UserSettingsScreen(),
+            child: Consumer<DeviceProvider>(
+              builder: (context, deviceProvider, child) {
+                final hasDevice = deviceProvider.isConnected;
+                return _currentNavIndex == 0
+                    ? (hasDevice ? _buildDashboard() : _buildNoDeviceState())
+                    : _currentNavIndex == 1
+                        ? (hasDevice ? const AIAutomationScreen() : _buildNoDeviceMessage('AI Automation'))
+                        : _currentNavIndex == 2
+                            ? (hasDevice ? const AnalyticsScreen() : _buildNoDeviceMessage('Analytics'))
+                            : const UserSettingsScreen();
+              },
+            ),
           ),
         ],
       ),
@@ -304,30 +296,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 Row(
                   children: [
-                    // Energy Stats
+                    // Device Stats
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Total Energy Used',
+                            'Device Status',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade700,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            '165 kWh',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D5F4C),
-                            ),
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF4CAF50),
+                                size: 20,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Online',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D5F4C),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Energy Efficiency Target',
+                            'Active Sensors',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade700,
@@ -335,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Reduce usage\nto 300 kWh',
+                            '3 Sensors\n4 Actuators',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -346,34 +348,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     
-                    // Circular Progress
-                    SizedBox(
+                    // Status Icon
+                    Container(
                       width: 120,
                       height: 120,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 120,
-                            height: 120,
-                            child: CircularProgressIndicator(
-                              value: 0.45,
-                              strokeWidth: 12,
-                              backgroundColor: Colors.grey.shade300,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFF4CAF50),
-                              ),
-                            ),
-                          ),
-                          const Text(
-                            '45%',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D5F4C),
-                            ),
-                          ),
-                        ],
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_outline,
+                        size: 60,
+                        color: Color(0xFF4CAF50),
                       ),
                     ),
                   ],
@@ -526,26 +512,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Chamber 1',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D5F4C),
-                              ),
-                            ),
-                            Text(
-                              'ID: MASH-A1-CAL25-D5A91F',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
+                      Expanded(
+                        child: Consumer<DeviceProvider>(
+                          builder: (context, deviceProvider, child) {
+                            final device = deviceProvider.connectedDevice;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  device?.name ?? 'Chamber 1',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2D5F4C),
+                                  ),
+                                ),
+                                Text(
+                                  'ID: ${device?.id ?? 'MASH-A1-CAL25-D5A91F'}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                       Switch(
@@ -661,13 +652,87 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Devices View
-  Widget _buildDevicesView() {
-    return const DevicesViewScreen();
+  // No Device Message
+  Widget _buildNoDeviceMessage(String feature) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E8),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.devices,
+                size: 100,
+                color: Color(0xFF2D5F4C),
+              ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'Start growing!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D5F4C),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Please connect your Chamber.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _isConnecting ? null : _handleConnect,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D5F4C),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isConnecting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Connect',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  // Analytics View
-  Widget _buildAnalyticsView() {
-    return const AnalyticsViewScreen();
+  // Devices View
+  Widget _buildDevicesView() {
+    return const Center(
+      child: Text('Devices View - Coming Soon'),
+    );
   }
+
 }

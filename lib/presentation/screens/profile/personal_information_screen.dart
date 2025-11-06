@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/session_service.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import 'edit_profile_screen.dart';
 
 class PersonalInformationScreen extends StatefulWidget {
@@ -10,27 +11,19 @@ class PersonalInformationScreen extends StatefulWidget {
 }
 
 class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
-  final SessionService _sessionService = SessionService();
-  
-  // Mock registered devices
-  final List<Map<String, dynamic>> _registeredDevices = [
-    {
-      'id': 'MASH-A1-CAL25-D5A91F',
-      'name': 'Chamber 1',
-      'status': 'active',
-      'registeredDate': 'Jan 15, 2025',
-    },
-    {
-      'id': 'MASH-A2-CAL25-E6B92G',
-      'name': 'Chamber 2',
-      'status': 'inactive',
-      'registeredDate': 'Jan 20, 2025',
-    },
-  ];
+  // TODO: Fetch devices from backend
+  final List<Map<String, dynamic>> _registeredDevices = [];
 
   @override
   Widget build(BuildContext context) {
-    final session = _sessionService.currentSession;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -102,10 +95,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                       color: const Color(0xFF2D5F4C).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: session?.profileImagePath != null
+                    child: user.profileImageUrl != null
                         ? ClipOval(
                             child: Image.network(
-                              session!.profileImagePath!,
+                              user.profileImageUrl!,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Icon(
@@ -128,7 +121,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          session?.fullName ?? 'User Name',
+                          '${user.firstName} ${user.lastName}',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -137,7 +130,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          session?.email ?? 'email@example.com',
+                          user.email,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
@@ -180,33 +173,20 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                 children: [
                   _buildInfoTile(
                     icon: Icons.person_outline,
-                    label: 'Full Name',
-                    value: session?.fullName ?? 'Not set',
+                    label: 'First Name',
+                    value: user.firstName ?? 'Not set',
+                  ),
+                  const Divider(height: 24),
+                  _buildInfoTile(
+                    icon: Icons.person_outline,
+                    label: 'Last Name',
+                    value: user.lastName ?? 'Not set',
                   ),
                   const Divider(height: 24),
                   _buildInfoTile(
                     icon: Icons.email_outlined,
                     label: 'Email',
-                    value: session?.email ?? 'Not set',
-                  ),
-                  const Divider(height: 24),
-                  _buildInfoTile(
-                    icon: Icons.phone_outlined,
-                    label: 'Phone Number',
-                    value: session?.phoneNumber ?? 'Not set',
-                  ),
-                  const Divider(height: 24),
-                  _buildInfoTile(
-                    icon: Icons.badge_outlined,
-                    label: 'Username',
-                    value: session?.username ?? 'Not set',
-                  ),
-                  const Divider(height: 24),
-                  _buildInfoTile(
-                    icon: Icons.location_on_outlined,
-                    label: 'Address',
-                    value: session?.fullAddress ?? 'Not set',
-                    maxLines: 3,
+                    value: user.email,
                   ),
                 ],
               ),
@@ -276,13 +256,13 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
               ),
               child: Column(
                 children: [
-                  _buildStatRow('Member Since', 'January 2025'),
+                  _buildStatRow('Member Since', _formatDate(user.createdAt ?? DateTime.now())),
                   const Divider(height: 24),
                   _buildStatRow('Total Devices', '${_registeredDevices.length}'),
                   const Divider(height: 24),
                   _buildStatRow('Active Devices', '${_registeredDevices.where((d) => d['status'] == 'active').length}'),
                   const Divider(height: 24),
-                  _buildStatRow('Account Type', 'Standard'),
+                  _buildStatRow('Account Type', (user.role ?? 'user').toUpperCase()),
                 ],
               ),
             ),
@@ -459,5 +439,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         ),
       ],
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.year}';
   }
 }

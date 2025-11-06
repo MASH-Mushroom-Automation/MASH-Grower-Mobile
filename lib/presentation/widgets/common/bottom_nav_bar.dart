@@ -39,7 +39,7 @@ class BottomNavBar extends StatelessWidget {
                 isActive: currentIndex == 0,
               ),
               _buildNavItem(
-                icon: Icons.grid_view_rounded,
+                icon: Icons.psychology,
                 index: 1,
                 isActive: currentIndex == 1,
               ),

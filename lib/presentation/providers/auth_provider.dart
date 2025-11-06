@@ -62,33 +62,9 @@ class AuthProvider extends ChangeNotifier {
           Logger.authLogin('Firebase (existing session)');
         }
       } else {
-        // Check if we have session data from registration
-        final sessionService = SessionService();
-        await sessionService.initialize();
-        final sessionData = await sessionService.getRegistrationData();
-        
-        if (sessionData != null) {
-          Logger.info('🔍 Auth Init - Found session data: $sessionData');
-          
-          // Create user from session data
-          _user = UserModel(
-            id: 'session-user-${DateTime.now().millisecondsSinceEpoch}',
-            email: sessionData['email'] ?? 'user@example.com',
-            firstName: sessionData['firstName'] ?? 'User',
-            lastName: sessionData['lastName'] ?? 'Name',
-            profileImageUrl: sessionData['profileImagePath'],
-            role: 'grower',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-          
-          // Store mock tokens
-          await _secureStorage.write(key: StorageKeys.accessToken, value: 'session-access-token');
-          await _secureStorage.write(key: StorageKeys.refreshToken, value: 'session-refresh-token');
-          
-          _isAuthenticated = true;
-          Logger.authLogin('Session Data (auto-login)');
-        }
+        // Session data is only for registration flow, not for auto-login
+        // User must authenticate with backend to be logged in
+        Logger.info('No authenticated user found');
       }
     } catch (e) {
       Logger.error('Auth initialization failed: $e');
@@ -110,6 +86,7 @@ class AuthProvider extends ChangeNotifier {
       final normalizedEmail = Validators.normalizeEmail(email);
 
       Logger.info('🔓 Backend Login attempt for: $normalizedEmail');
+      print('🔓 Backend Login attempt for: $normalizedEmail'); // Console print
 
       // Create login request
       final loginRequest = LoginRequestModel(
@@ -117,8 +94,17 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
+      Logger.info('📤 Calling auth repository login...');
+      print('📤 Calling auth repository login...'); // Console print
+      
       // Call backend API
       final response = await _authRepository.login(loginRequest);
+
+      Logger.info('📥 Got response from auth repository');
+      print('📥 Got response from auth repository'); // Console print
+      print('Response success: ${response.success}');
+      print('Response user: ${response.user}');
+      print('Response message: ${response.message}');
 
       if (response.success && response.user != null) {
         // Store backend user data
@@ -142,14 +128,19 @@ class AuthProvider extends ChangeNotifier {
         Logger.authLogin('Backend API Login - $normalizedEmail');
         Logger.info('✅ User logged in: ${response.user!.displayName}');
         
+        // Notify listeners to update UI immediately
+        notifyListeners();
+        
         return true;
       } else {
         _setError(response.message);
         return false;
       }
 
-    } catch (e) {
+    } catch (e, stackTrace) {
       Logger.error('❌ Backend login failed', e);
+      print('❌ ERROR in loginWithBackend: $e');
+      print('Stack trace: $stackTrace');
       
       // Extract user-friendly error message
       String errorMessage = 'Login failed. Please check your credentials.';
@@ -163,6 +154,7 @@ class AuthProvider extends ChangeNotifier {
         errorMessage = 'Network error. Please check your connection.';
       }
       
+      print('Setting error message: $errorMessage');
       _setError(errorMessage);
       return false;
     } finally {
@@ -355,8 +347,14 @@ class AuthProvider extends ChangeNotifier {
     try {
       Logger.info('🚪 Logging out user...');
       
-      // Call backend logout API
-      await _authRepository.logout();
+      // Try to call backend logout API (may fail due to CORS on web)
+      try {
+        await _authRepository.logout();
+      } catch (e) {
+        Logger.error('⚠️ Backend logout failed (continuing with local cleanup): $e');
+        print('⚠️ Backend logout failed (continuing with local cleanup): $e');
+        // Continue with local cleanup even if backend call fails
+      }
       
       // Sign out from Firebase (if still using it)
       try {
@@ -365,17 +363,29 @@ class AuthProvider extends ChangeNotifier {
         Logger.error('Firebase signOut failed (non-critical)', e);
       }
       
-      // Clear stored tokens (done by AuthRepository, but double-check)
-      await _secureStorage.delete(key: StorageKeys.accessToken);
-      await _secureStorage.delete(key: StorageKeys.refreshToken);
-      await _secureStorage.delete(key: StorageKeys.userData);
+      // Clear stored tokens
+      try {
+        await _secureStorage.delete(key: StorageKeys.accessToken);
+        await _secureStorage.delete(key: StorageKeys.refreshToken);
+        await _secureStorage.delete(key: StorageKeys.userData);
+      } catch (e) {
+        Logger.error('⚠️ Failed to clear secure storage: $e');
+      }
       
       // Clear session data
-      final sessionService = SessionService();
-      await sessionService.clearSession();
+      try {
+        final sessionService = SessionService();
+        await sessionService.clearSession();
+      } catch (e) {
+        Logger.error('⚠️ Failed to clear session: $e');
+      }
       
       // Clear local data
-      await _authLocalDataSource.clearUserData();
+      try {
+        await _authLocalDataSource.clearUserData();
+      } catch (e) {
+        Logger.error('⚠️ Failed to clear local data: $e');
+      }
       
       // Clear state
       _user = null;
@@ -387,7 +397,11 @@ class AuthProvider extends ChangeNotifier {
       Logger.info('✅ User logged out successfully');
     } catch (e) {
       Logger.error('❌ Logout failed', e);
-      _setError('Failed to sign out');
+      // Don't set error - we still want to clear the user state
+      _user = null;
+      _backendUser = null;
+      _isAuthenticated = false;
+      _clearError();
     } finally {
       _setLoading(false);
     }

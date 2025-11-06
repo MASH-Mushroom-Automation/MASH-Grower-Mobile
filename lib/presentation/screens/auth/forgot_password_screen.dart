@@ -112,16 +112,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 
                 const SizedBox(height: 40),
                 
-                // Email Label
-                Text(
-                  'Email',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade800,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                
                 // Email Input
                 TextFormField(
                   controller: _emailController,

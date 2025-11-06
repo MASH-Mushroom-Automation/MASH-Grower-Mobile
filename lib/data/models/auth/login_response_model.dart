@@ -19,11 +19,14 @@ class LoginResponseModel extends Equatable {
   
   /// Create from JSON response
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
+    // Debug: Print the actual JSON to see what backend returns
+    print('🔍 Parsing login response JSON: $json');
+    
     return LoginResponseModel(
       success: json['success'] as bool? ?? true,
       message: json['message'] as String? ?? 'Login successful',
-      accessToken: json['accessToken'] as String,
-      refreshToken: json['refreshToken'] as String,
+      accessToken: json['accessToken'] as String? ?? json['access_token'] as String? ?? '',
+      refreshToken: json['refreshToken'] as String? ?? json['refresh_token'] as String? ?? '',
       user: BackendUserModel.fromJson(json['user'] as Map<String, dynamic>),
     );
   }

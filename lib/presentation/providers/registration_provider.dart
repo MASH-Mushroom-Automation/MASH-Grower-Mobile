@@ -284,16 +284,14 @@ class RegistrationProvider extends ChangeNotifier {
       Logger.info('📝 Submitting registration for: $_email');
       
       // Build the registration request
+      // Note: Backend only accepts email, password, firstName, lastName, username
+      // middleName and contactNumber are stored locally but not sent to backend
       final registerRequest = RegisterRequestModel(
         email: _email,
         password: _password,
         firstName: _firstName,
         lastName: _lastName,
         username: _username,
-        middleName: _middleName.isNotEmpty ? _middleName : null,
-        contactNumber: _contactNumber.isNotEmpty 
-            ? '$_countryCode$_contactNumber' 
-            : null,
       );
       
       // Call backend API

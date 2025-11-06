@@ -80,16 +80,40 @@ class AuthRemoteDataSource {
   Future<LoginResponseModel> login(LoginRequestModel request) async {
     try {
       Logger.info('🔐 Logging in user: ${request.email}');
+      print('🔐 Logging in user: ${request.email}');
+      
+      Logger.info('🌐 Login endpoint: ${ApiEndpoints.authLogin}');
+      print('🌐 Login endpoint: ${ApiEndpoints.authLogin}');
+      
+      Logger.info('📤 Login request data: ${request.toJson()}');
+      print('📤 Login request data: ${request.toJson()}');
       
       final response = await _apiClient.post(
         ApiEndpoints.authLogin,
         data: request.toJson(),
       );
       
-      Logger.info('✅ Login successful');
-      return LoginResponseModel.fromJson(response.data);
-    } catch (e) {
+      // Log the actual response for debugging
+      Logger.info('📦 Login API Response: ${response.data}');
+      print('📦 Login API Response: ${response.data}');
+      Logger.info('✅ Login API call successful');
+      
+      // Extract the actual data from the wrapped response
+      final responseData = response.data;
+      final loginData = responseData['data'] ?? responseData;
+      
+      Logger.info('📦 Extracted login data: $loginData');
+      print('📦 Extracted login data: $loginData');
+      
+      return LoginResponseModel.fromJson(loginData);
+    } catch (e, stackTrace) {
       Logger.error('❌ Login failed', e);
+      print('❌ Login failed: $e');
+      Logger.error('Error type: ${e.runtimeType}');
+      print('Error type: ${e.runtimeType}');
+      Logger.error('Error details: $e');
+      print('Error details: $e');
+      print('Stack trace: $stackTrace');
       rethrow;
     }
   }

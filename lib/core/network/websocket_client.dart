@@ -206,7 +206,7 @@ class WebSocketClient {
   String _getWebSocketUrl() {
     // In production, you might want to use environment variables
     // For now, we'll use the production URL
-    return 'wss://mash-backend.onrender.com/ws';
+    return 'wss://mash-backend-api-production.up.railway.app/ws';
   }
 
   // Stream filters for specific events

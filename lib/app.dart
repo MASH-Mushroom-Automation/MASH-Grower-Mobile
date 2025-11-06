@@ -64,16 +64,16 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
+    // Only show splash screen during initial loading (onboarding check)
     if (!_onboardingChecked) {
       return const SplashScreen();
     }
 
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        // Show splash screen while checking authentication
-        if (authProvider.isLoading) {
-          return const SplashScreen();
-        }
+        // Don't show splash screen during login attempts
+        // Only show it during initial auth check
+        // (isLoading will be true briefly during login, but we don't want splash then)
 
         if (!_onboardingCompleted) {
           return OnboardingScreen(onCompleted: _completeOnboarding);

@@ -1,11 +1,11 @@
 class ApiEndpoints {
   // Base URLs
   static const String devBaseUrl = 'http://localhost:3000/api/v1';
-  static const String prodBaseUrl = 'https://mash-backend.onrender.com/api/v1';
+  static const String prodBaseUrl = 'https://mash-backend-api-production.up.railway.app/api/v1';
   
   // WebSocket URLs
   static const String devWsUrl = 'ws://localhost:3000/ws';
-  static const String prodWsUrl = 'wss://mash-backend.onrender.com/ws';
+  static const String prodWsUrl = 'wss://mash-backend-api-production.up.railway.app/ws';
   
   // ========== Backend Authentication Endpoints ==========
   // Registration & Email Verification

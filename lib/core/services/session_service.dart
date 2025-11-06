@@ -116,19 +116,19 @@ class SessionService {
 
   Future<void> _loadSession() async {
     final sessionData = _prefs?.getString(StorageKeys.userData);
-    print('🔍 SessionService - Loading session data: $sessionData');
+    print('SessionService - Loading session data: $sessionData');
     if (sessionData != null) {
       try {
         final json = jsonDecode(sessionData);
         _currentSession = UserSession.fromJson(json);
-        print('🔍 SessionService - Loaded session: ${_currentSession?.toJson()}');
+        print('SessionService - Loaded session: ${_currentSession?.toJson()}');
       } catch (e) {
-        print('🔍 SessionService - Error loading session: $e');
+        print('SessionService - Error loading session: $e');
         // Invalid session data, clear it
         await clearSession();
       }
     } else {
-      print('🔍 SessionService - No session data found');
+      print('SessionService - No session data found');
     }
   }
 
@@ -151,7 +151,7 @@ class SessionService {
         final List<dynamic> accounts = jsonDecode(accountsJson);
         return accounts.cast<String>();
       } catch (e) {
-        print('🔍 SessionService - Error loading registered accounts: $e');
+        print('SessionService - Error loading registered accounts: $e');
         return [];
       }
     }
@@ -169,14 +169,14 @@ class SessionService {
     final registeredAccounts = await getRegisteredAccounts();
     
     if (registeredAccounts.length >= 3) {
-      print('🔍 SessionService - Maximum 3 accounts allowed');
+      print('SessionService - Maximum 3 accounts allowed');
       return false;
     }
     
     if (!registeredAccounts.contains(email)) {
       registeredAccounts.add(email);
       await _prefs?.setString(_registeredAccountsKey, jsonEncode(registeredAccounts));
-      print('🔍 SessionService - Added registered account: $email');
+      print('SessionService - Added registered account: $email');
       return true;
     }
     
@@ -188,7 +188,7 @@ class SessionService {
     final registeredAccounts = await getRegisteredAccounts();
     registeredAccounts.remove(email);
     await _prefs?.setString(_registeredAccountsKey, jsonEncode(registeredAccounts));
-    print('🔍 SessionService - Removed registered account: $email');
+    print('SessionService - Removed registered account: $email');
   }
 
   // Get account data by email
@@ -199,7 +199,7 @@ class SessionService {
         final json = jsonDecode(accountData);
         return UserSession.fromJson(json);
       } catch (e) {
-        print('🔍 SessionService - Error loading account data for $email: $e');
+        print('SessionService - Error loading account data for $email: $e');
       }
     }
     return null;
@@ -209,15 +209,15 @@ class SessionService {
   Future<void> saveAccountData(String email, UserSession session) async {
     final accountData = jsonEncode(session.toJson());
     await _prefs?.setString('account_$email', accountData);
-    print('🔍 SessionService - Saved account data for: $email');
+    print('SessionService - Saved account data for: $email');
   }
 
   Future<void> saveSession(UserSession session) async {
     _currentSession = session;
     final sessionData = jsonEncode(session.toJson());
-    print('🔍 SessionService - Saving session data: $sessionData');
+    print('SessionService - Saving session data: $sessionData');
     await _prefs?.setString(StorageKeys.userData, sessionData);
-    print('🔍 SessionService - Session saved successfully');
+    print('SessionService - Session saved successfully');
   }
 
   Future<void> updateSession({
@@ -330,7 +330,7 @@ class SessionService {
     // Load account data for this email
     final accountData = await getAccountData(email);
     if (accountData != null) {
-      print('🔍 SessionService - Loading account data for: $email');
+      print('SessionService - Loading account data for: $email');
       await saveSession(accountData);
     } else {
       // Fallback to minimal data if account data not found

@@ -7,7 +7,7 @@ import 'package:equatable/equatable.dart';
 class BackendUserModel extends Equatable {
   final String id;
   final String email;
-  final String username;
+  final String? username; // Made optional
   final String firstName;
   final String lastName;
   final String? middleName;
@@ -22,7 +22,7 @@ class BackendUserModel extends Equatable {
   const BackendUserModel({
     required this.id,
     required this.email,
-    required this.username,
+    this.username, // Made optional
     required this.firstName,
     required this.lastName,
     this.middleName,
@@ -43,15 +43,19 @@ class BackendUserModel extends Equatable {
     return '$firstName $lastName';
   }
   
-  /// Get display name (first name or username)
-  String get displayName => firstName.isNotEmpty ? firstName : username;
+  /// Get display name (first name or username or email prefix)
+  String get displayName => firstName.isNotEmpty 
+      ? firstName 
+      : username?.isNotEmpty == true 
+          ? username! 
+          : email.split('@')[0];
   
   /// Create from JSON response
   factory BackendUserModel.fromJson(Map<String, dynamic> json) {
     return BackendUserModel(
       id: json['id'] as String,
       email: json['email'] as String,
-      username: json['username'] as String,
+      username: json['username'] as String? ?? json['email'].split('@')[0], // Fallback to email prefix
       firstName: json['firstName'] as String,
       lastName: json['lastName'] as String,
       middleName: json['middleName'] as String?,
@@ -74,7 +78,7 @@ class BackendUserModel extends Equatable {
     return {
       'id': id,
       'email': email,
-      'username': username,
+      if (username != null) 'username': username,
       'firstName': firstName,
       'lastName': lastName,
       if (middleName != null) 'middleName': middleName,

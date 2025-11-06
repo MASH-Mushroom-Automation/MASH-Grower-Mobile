@@ -1,4 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/services/device_connection_service.dart';
+import '../../../core/utils/logger.dart';
+import '../../providers/device_provider.dart';
 
 class ChamberDetailScreen extends StatefulWidget {
   const ChamberDetailScreen({super.key});
@@ -8,20 +13,26 @@ class ChamberDetailScreen extends StatefulWidget {
 }
 
 class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
+  final DeviceConnectionService _deviceService = DeviceConnectionService();
+  Timer? _sensorUpdateTimer;
+  
   bool _tempSensorOn = true;
   bool _humiditySensorOn = true;
   bool _co2SensorOn = true;
-  bool _fanOn = true;
-  bool _humidifierOn = true;
-  bool _blowerFanOn = true;
-  bool _ledOn = true;
+  bool _fanOn = false;  // Default OFF
+  bool _humidifierOn = false;  // Default OFF
+  bool _blowerFanOn = false;  // Default OFF
+  bool _ledOn = false;  // Default OFF
   
   // Mode selection
   String _selectedMode = 'Spawning Phase';
   final List<String> _modes = ['Spawning Phase', 'Fruiting Phase'];
   
-  // Mock CO2 sensor reading (in ppm)
+  // Real sensor data
+  double _currentTemp = 23.0;
+  double _currentHumidity = 54.0;
   double _currentCO2 = 5000.0;
+  bool _isLoadingSensorData = false;
   
   // Get mode-specific settings
   Map<String, dynamic> get _modeSettings {
@@ -73,6 +84,65 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _fetchSensorData();
+    // Update sensor data every 5 seconds
+    _sensorUpdateTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _fetchSensorData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _sensorUpdateTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchSensorData() async {
+    if (_isLoadingSensorData) return;
+    
+    setState(() {
+      _isLoadingSensorData = true;
+    });
+
+    try {
+      final sensorData = await _deviceService.getSensorData();
+      final actuatorStates = await _deviceService.getActuatorStates();
+      
+      if (sensorData != null && mounted) {
+        setState(() {
+          _currentTemp = sensorData.temperature ?? _currentTemp;
+          _currentHumidity = sensorData.humidity ?? _currentHumidity;
+          _currentCO2 = sensorData.co2 ?? _currentCO2;
+          
+          // Update mode from device
+          if (sensorData.mode != null) {
+            _selectedMode = sensorData.mode == 's' ? 'Spawning Phase' : 'Fruiting Phase';
+            _fanOn = _modeSettings['fanEnabled'];
+          }
+          
+          // Update actuator states from device
+          if (actuatorStates != null) {
+            _fanOn = actuatorStates['exhaust_fan'] ?? _fanOn;
+            _humidifierOn = actuatorStates['humidifier'] ?? _humidifierOn;
+            _blowerFanOn = actuatorStates['blower_fan'] ?? _blowerFanOn;
+            _ledOn = actuatorStates['led_lights'] ?? _ledOn;
+          }
+        });
+      }
+    } catch (e) {
+      Logger.error('Failed to fetch sensor data: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingSensorData = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -83,26 +153,53 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF2D5F4C)),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Chamber 1',
-              style: TextStyle(
-                color: Color(0xFF2D5F4C),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Manage your Environment controls',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
+        title: Consumer<DeviceProvider>(
+          builder: (context, deviceProvider, child) {
+            final deviceName = deviceProvider.connectedDevice?.name ?? 'Chamber 1';
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      deviceName,
+                      style: const TextStyle(
+                        color: Color(0xFF2D5F4C),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Live indicator
+                    if (!_isLoadingSensorData)
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withValues(alpha: 0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const Text(
+                  'Manage your Environment controls',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         actions: [
           IconButton(
@@ -196,13 +293,28 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                             ),
                           );
                         }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedMode = value!;
-                            // Update fan state based on mode
-                            _fanOn = _modeSettings['fanEnabled'];
-                          });
-                          _showModeChangeConfirmation(value!);
+                        onChanged: (value) async {
+                          // Send mode change to device
+                          final mode = value == 'Spawning Phase' ? 's' : 'f';
+                          final success = await _deviceService.setMode(mode);
+                          
+                          if (success) {
+                            setState(() {
+                              _selectedMode = value!;
+                              // Update fan state based on mode
+                              _fanOn = _modeSettings['fanEnabled'];
+                            });
+                            _showModeChangeConfirmation(value!);
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to change device mode'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         },
                       ),
                     ),
@@ -270,50 +382,6 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        // Testing controls
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _currentCO2 = _selectedMode == 'Spawning Phase' 
-                                        ? 4999.0 // Below threshold
-                                        : 850.0; // Above threshold
-                                  });
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red.shade100,
-                                  foregroundColor: Colors.red.shade700,
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  minimumSize: const Size(0, 28),
-                                ),
-                                child: const Text('Alert', style: TextStyle(fontSize: 11)),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _currentCO2 = _selectedMode == 'Spawning Phase'
-                                        ? 5000.0 // At limit
-                                        : 550.0; // Optimal
-                                  });
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green.shade100,
-                                  foregroundColor: Colors.green.shade700,
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  minimumSize: const Size(0, 28),
-                                ),
-                                child: const Text('Normal', style: TextStyle(fontSize: 11)),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -361,94 +429,132 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
             
             const SizedBox(height: 24),
             
-            // Sensors Tab
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E8),
-                  borderRadius: BorderRadius.circular(24),
+            // Sensors Section Header
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D5F4C),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                child: const Text(
-                  'Sensors',
+                const SizedBox(width: 12),
+                const Text(
+                  'Sensor Readings',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF2D5F4C),
                   ),
                 ),
-              ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF4CAF50),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Live',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2D5F4C),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             
             const SizedBox(height: 24),
             
-            // Sensor Control Cards - responsive grid
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final crossAxis = width < 600 ? 2 : 3;
-                final spacing = 12 * (crossAxis - 1);
-                final itemWidth = (width - spacing) / crossAxis;
-                // reduce target height by ~20% to make cards smaller
-                const itemHeight = 112.0; // 140 * 0.8
-                final childAspectRatio = (itemWidth / itemHeight).clamp(0.5, 2.0);
-
-                return GridView.count(
-                  crossAxisCount: crossAxis,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: childAspectRatio,
-                  children: [
-                    _buildSensorControlCard(
-                      icon: Icons.thermostat,
-                      label: 'Temperature',
-                      value: '23°C',
-                      isOn: _tempSensorOn,
-                    ),
-                    _buildSensorControlCard(
-                      icon: Icons.thermostat,
-                      label: 'Temperature',
-                      value: '23°C',
-                      isOn: _tempSensorOn,
-                    ),
-                    _buildSensorControlCard(
-                      icon: Icons.water_drop,
-                      label: 'Humidity',
-                      value: '54%',
-                      isOn: _humiditySensorOn,
-                    ),
-                    _buildSensorControlCard(
-                      icon: Icons.air,
-                      label: 'CO2',
-                      value: 'Current: ${_currentCO2.toInt()}ppm',
-                      isOn: _co2SensorOn,
-                    ),
-                  ],
-                );
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // Actuator Tab
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E8),
-                  borderRadius: BorderRadius.circular(24),
+            // Sensor Control Cards - 3 columns
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.72,
+              children: [
+                _buildSensorControlCard(
+                  icon: Icons.thermostat,
+                  label: 'Temperature',
+                  value: '${_currentTemp.toStringAsFixed(1)}°C',
+                  recommendedValue: _selectedMode == 'Spawning Phase' ? '24-27°C' : '18-24°C',
+                  isOn: _tempSensorOn,
                 ),
-                child: const Text(
-                  'Actuators',
+                _buildSensorControlCard(
+                  icon: Icons.water_drop,
+                  label: 'Humidity',
+                  value: '${_currentHumidity.toStringAsFixed(0)}%',
+                  recommendedValue: _selectedMode == 'Spawning Phase' ? '90-95%' : '85-90%',
+                  isOn: _humiditySensorOn,
+                ),
+                _buildSensorControlCard(
+                  icon: Icons.air,
+                  label: 'CO2',
+                  value: '${_currentCO2.toInt()}ppm',
+                  recommendedValue: _selectedMode == 'Spawning Phase' ? '5000ppm' : '300-800ppm',
+                  isOn: _co2SensorOn,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Actuators Section Header
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D5F4C),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Device Controls',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF2D5F4C),
                   ),
                 ),
-              ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    '4 Actuators',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2D5F4C),
+                    ),
+                  ),
+                ),
+              ],
             ),
             
             const SizedBox(height: 24),
@@ -474,42 +580,82 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                   children: [
                     _buildActuatorControlCard(
                       icon: Icons.air,
-                      label: 'Fans',
+                      label: 'Exhaust Fan',
                       isOn: _fanOn,
-                      onToggle: (value) {
-                        setState(() {
-                          _fanOn = value;
-                        });
+                      onToggle: (value) async {
+                        final success = await _deviceService.controlActuator('exhaust_fan', value);
+                        if (success) {
+                          setState(() {
+                            _fanOn = value;
+                          });
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to control exhaust fan'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       },
                     ),
                     _buildActuatorControlCard(
                       icon: Icons.water_drop,
                       label: 'Humidifier',
                       isOn: _humidifierOn,
-                      onToggle: (value) {
-                        setState(() {
-                          _humidifierOn = value;
-                        });
+                      onToggle: (value) async {
+                        final success = await _deviceService.controlActuator('humidifier', value);
+                        if (success) {
+                          setState(() {
+                            _humidifierOn = value;
+                          });
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to control humidifier'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       },
                     ),
                     _buildActuatorControlCard(
                       icon: Icons.air_rounded,
                       label: 'Blower Fan',
                       isOn: _blowerFanOn,
-                      onToggle: (value) {
-                        setState(() {
-                          _blowerFanOn = value;
-                        });
+                      onToggle: (value) async {
+                        final success = await _deviceService.controlActuator('blower_fan', value);
+                        if (success) {
+                          setState(() {
+                            _blowerFanOn = value;
+                          });
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to control blower fan'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       },
                     ),
                     _buildActuatorControlCard(
                       icon: Icons.light,
-                      label: 'LED',
+                      label: 'LED Lights',
                       isOn: _ledOn,
-                      onToggle: (value) {
-                        setState(() {
-                          _ledOn = value;
-                        });
+                      onToggle: (value) async {
+                        final success = await _deviceService.controlActuator('led_lights', value);
+                        if (success) {
+                          setState(() {
+                            _ledOn = value;
+                          });
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to control LED lights'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       },
                     ),
                   ],
@@ -529,52 +675,116 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
     required IconData icon,
     required String label,
     required String value,
+    required String recommendedValue,
     required bool isOn,
     bool isDisabled = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12), // reduced ~20%
       decoration: BoxDecoration(
-        color: isDisabled
-            ? Colors.grey.shade200
-            : const Color(0xFFE8F5E8),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
-              size: 26, // reduced from 32
-            ),
-          ),
-
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12, // reduced ~20%
-              fontWeight: FontWeight.w600,
-              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
-            ),
-          ),
-
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10, // reduced ~20%
-              color: Colors.grey.shade700,
-            ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDisabled
+              ? [Colors.grey.shade200, Colors.grey.shade300]
+              : [Colors.white, const Color(0xFFE8F5E8)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Icon with gradient background
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDisabled
+                      ? [Colors.grey.shade300, Colors.grey.shade400]
+                      : [const Color(0xFF2D5F4C), const Color(0xFF4CAF50)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (isDisabled ? Colors.grey : const Color(0xFF2D5F4C))
+                        .withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            // Label
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
+              ),
+            ),
+
+            const SizedBox(height: 2),
+
+            // Value with emphasis
+            Text(
+              value,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: isDisabled ? Colors.grey.shade600 : const Color(0xFF2D5F4C),
+              ),
+            ),
+
+            // Recommended value
+            Text(
+              'Target: $recommendedValue',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 9,
+                color: Colors.grey.shade600,
+              ),
+            ),
+
+            // Status indicator
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: isOn
+                    ? Colors.green.withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                isOn ? 'ACTIVE' : 'INACTIVE',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: isOn ? Colors.green.shade700 : Colors.grey.shade600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -587,68 +797,128 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
     bool isDisabled = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12), // reduced ~20%
       decoration: BoxDecoration(
-        color: isDisabled
-            ? Colors.grey.shade200
-            : const Color(0xFFE8F5E8),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
-              size: 22, // smaller
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11, // reduced
-              fontWeight: FontWeight.w600,
-              color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          Column(
-            children: [
-              Text(
-                isDisabled ? 'DISABLED' : (isOn ? 'ACTIVE' : 'INACTIVE'),
-                style: TextStyle(
-                  fontSize: 9, // slightly smaller
-                  fontWeight: FontWeight.bold,
-                  color: isDisabled
-                      ? Colors.grey
-                      : (isOn ? const Color(0xFF4CAF50) : Colors.grey),
-                ),
-              ),
-              Transform.scale(
-                scale: 0.75,
-                child: Switch(
-                  value: isOn,
-                  onChanged: isDisabled ? null : onToggle,
-                  activeTrackColor: const Color(0xFF4CAF50),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDisabled
+              ? [Colors.grey.shade200, Colors.grey.shade300]
+              : isOn
+                  ? [const Color(0xFFE8F5E8), const Color(0xFFD4ECD4)]
+                  : [Colors.white, const Color(0xFFF5F5F5)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isOn
+              ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+              : Colors.transparent,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isOn
+                ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Icon with conditional styling
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDisabled
+                      ? [Colors.grey.shade300, Colors.grey.shade400]
+                      : isOn
+                          ? [const Color(0xFF4CAF50), const Color(0xFF66BB6A)]
+                          : [const Color(0xFF2D5F4C), const Color(0xFF4CAF50)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (isDisabled
+                            ? Colors.grey
+                            : isOn
+                                ? const Color(0xFF4CAF50)
+                                : const Color(0xFF2D5F4C))
+                        .withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Label
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Status and Toggle
+            Column(
+              children: [
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDisabled
+                        ? Colors.grey.withValues(alpha: 0.2)
+                        : isOn
+                            ? Colors.green.withValues(alpha: 0.2)
+                            : Colors.grey.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    isDisabled ? 'DISABLED' : (isOn ? 'ACTIVE' : 'INACTIVE'),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isDisabled
+                          ? Colors.grey.shade600
+                          : isOn
+                              ? Colors.green.shade700
+                              : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: isOn,
+                    onChanged: isDisabled ? null : onToggle,
+                    activeTrackColor: const Color(0xFF4CAF50),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

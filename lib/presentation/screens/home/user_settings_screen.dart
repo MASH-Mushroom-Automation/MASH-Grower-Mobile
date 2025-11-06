@@ -6,7 +6,6 @@ import 'dart:typed_data';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../../core/services/session_service.dart';
 import '../auth/login_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../profile/change_password_screen.dart';
@@ -24,28 +23,12 @@ class UserSettingsScreen extends StatefulWidget {
 }
 
 class _UserSettingsScreenState extends State<UserSettingsScreen> {
-  final SessionService _sessionService = SessionService();
-  bool _isInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeSession();
-  }
-
-  void _initializeSession() async {
-    await _sessionService.initialize();
-    print('🔍 User Settings - Session initialized: ${_sessionService.currentSession?.toJson()}');
-    if (mounted) {
-      setState(() {
-        _isInitialized = true;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    
+    if (user == null) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -53,7 +36,6 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
       );
     }
     
-    final session = _sessionService.currentSession;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SingleChildScrollView(
@@ -79,35 +61,21 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                       shape: BoxShape.circle,
                       color: Colors.white,
                     ),
-                    child: session?.profileImagePath != null
+                    child: user.profileImageUrl != null
                         ? ClipOval(
-                            child: kIsWeb
-                                ? Image.network(
-                                    session!.profileImagePath!,
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
-                                        Icons.person,
-                                        size: 50,
-                                        color: Color(0xFF2D5F4C),
-                                      );
-                                    },
-                                  )
-                                : Image.file(
-                                    File(session!.profileImagePath!),
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
-                                        Icons.person,
-                                        size: 50,
-                                        color: Color(0xFF2D5F4C),
-                                      );
-                                    },
-                                  ),
+                            child: Image.network(
+                                user.profileImageUrl!,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Color(0xFF2D5F4C),
+                                  );
+                                },
+                              ),
                           )
                         : const Icon(
                             Icons.person,
@@ -117,7 +85,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    session?.fullName ?? 'Guest User',
+                    '${user.firstName} ${user.lastName}',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -126,7 +94,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    session?.email ?? 'guest@example.com',
+                    user.email,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withValues(alpha: 0.8),
@@ -223,24 +191,24 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
               context,
               title: 'App Settings',
               items: [
-                _SettingsItem(
-                  icon: Icons.dark_mode_outlined,
-                  title: 'Dark Mode',
-                  trailing: Consumer<ThemeProvider>(
-                    builder: (context, themeProvider, child) {
-                      final isDark = themeProvider.themeMode == ThemeMode.dark;
-                      return Switch(
-                        value: isDark,
-                        onChanged: (value) {
-                          themeProvider.setThemeMode(
-                            value ? ThemeMode.dark : ThemeMode.light,
-                          );
-                        },
-                        activeTrackColor: const Color(0xFF2D5F4C),
-                      );
-                    },
-                  ),
-                ),
+                // _SettingsItem(
+                //   icon: Icons.dark_mode_outlined,
+                //   title: 'Dark Mode',
+                //   trailing: Consumer<ThemeProvider>(
+                //     builder: (context, themeProvider, child) {
+                //       final isDark = themeProvider.themeMode == ThemeMode.dark;
+                //       return Switch(
+                //         value: isDark,
+                //         onChanged: (value) {
+                //           themeProvider.setThemeMode(
+                //             value ? ThemeMode.dark : ThemeMode.light,
+                //           );
+                //         },
+                //         activeTrackColor: const Color(0xFF2D5F4C),
+                //       );
+                //     },
+                //   ),
+                // ),
                 _SettingsItem(
                   icon: Icons.language,
                   title: 'Language',

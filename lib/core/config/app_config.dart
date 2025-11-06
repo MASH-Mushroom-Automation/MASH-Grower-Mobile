@@ -5,11 +5,11 @@ class AppConfig {
   
   // API Configuration
   static const String devApiBaseUrl = 'http://localhost:3000/api/v1';
-  static const String prodApiBaseUrl = 'https://mash-backend.onrender.com/api/v1';
+  static const String prodApiBaseUrl = 'https://mash-backend-api-production.up.railway.app/api/v1';
   
   // WebSocket Configuration
   static const String devWsUrl = 'ws://localhost:3000/ws';
-  static const String prodWsUrl = 'wss://mash-backend.onrender.com/ws';
+  static const String prodWsUrl = 'wss://mash-backend-api-production.up.railway.app/ws';
   
   // Firebase Configuration
   static const String firebaseProjectId = 'mash-grower-app';

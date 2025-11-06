@@ -122,17 +122,6 @@ class _EmailPageState extends State<EmailPage> {
 
               const SizedBox(height: 40),
 
-              // Email Field Label
-              Text(
-                'Email',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
-                    ),
-              ),
-
-              const SizedBox(height: 8),
-
               // Email Input
               ValidatedTextField(
                 key: const Key('registration_email_field'),
@@ -201,79 +190,79 @@ class _EmailPageState extends State<EmailPage> {
 
               const SizedBox(height: 24),
 
-              // Divider
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'or',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                ],
-              ),
+              // // Divider
+              // Row(
+              //   children: [
+              //     Expanded(child: Divider(color: Colors.grey.shade300)),
+              //     Padding(
+              //       padding: const EdgeInsets.symmetric(horizontal: 16),
+              //       child: Text(
+              //         'or',
+              //         style: TextStyle(color: Colors.grey.shade600),
+              //       ),
+              //     ),
+              //     Expanded(child: Divider(color: Colors.grey.shade300)),
+              //   ],
+              // ),
 
-              const SizedBox(height: 24),
+              // const SizedBox(height: 24),
 
-              // Google Sign-up
-              OutlinedButton.icon(
-                onPressed: _handleGoogleSignUp,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.white,
-                ),
-                icon: Image.asset(
-                  'icons/google.png',
-                  height: 24,
-                  width: 24
-                ),
-                label: const Text(
-                  'Sign up with Google',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+              // // Google Sign-up
+              // OutlinedButton.icon(
+              //   onPressed: _handleGoogleSignUp,
+              //   style: OutlinedButton.styleFrom(
+              //     minimumSize: const Size(double.infinity, 56),
+              //     side: BorderSide(color: Colors.grey.shade300),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //     backgroundColor: Colors.white,
+              //   ),
+              //   icon: Image.asset(
+              //     'icons/google.png',
+              //     height: 24,
+              //     width: 24
+              //   ),
+              //   label: const Text(
+              //     'Sign up with Google',
+              //     style: TextStyle(
+              //       fontSize: 16,
+              //       color: Colors.black87,
+              //     ),
+              //   ),
+              // ),
 
-              const SizedBox(height: 16),
+              // const SizedBox(height: 16),
 
-              // Facebook Sign-up
-              OutlinedButton.icon(
-                onPressed: _handleFacebookSignUp,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.white,
-                ),
-                icon: Image.asset(
-                  'icons/facebook.png',
-                  height: 24,
-                  width: 24,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
-                  },
-                ),
-                label: const Text(
-                  'Sign up with Facebook',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+              // // Facebook Sign-up
+              // OutlinedButton.icon(
+              //   onPressed: _handleFacebookSignUp,
+              //   style: OutlinedButton.styleFrom(
+              //     minimumSize: const Size(double.infinity, 56),
+              //     side: BorderSide(color: Colors.grey.shade300),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //     backgroundColor: Colors.white,
+              //   ),
+              //   icon: Image.asset(
+              //     'icons/facebook.png',
+              //     height: 24,
+              //     width: 24,
+              //     errorBuilder: (context, error, stackTrace) {
+              //       return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
+              //     },
+              //   ),
+              //   label: const Text(
+              //     'Sign up with Facebook',
+              //     style: TextStyle(
+              //       fontSize: 16,
+              //       color: Colors.black87,
+              //     ),
+              //   ),
+              // ),
 
-              const SizedBox(height: 32),
+              // const SizedBox(height: 32),
 
               // Sign In Link
               Row(

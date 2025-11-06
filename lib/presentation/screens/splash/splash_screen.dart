@@ -83,8 +83,8 @@ class _SplashScreenState extends State<SplashScreen>
                       children: [
                         // App Logo/Icon
                         Container(
-                          width: 120,
-                          height: 120,
+                          width: 160,
+                          height: 160,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -96,10 +96,19 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.eco,
-                            size: 60,
-                            color: ThemeConfig.primaryColor,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.asset(
+                              'assets/images/mash-logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.eco,
+                                  size: 60,
+                                  color: ThemeConfig.primaryColor,
+                                );
+                              },
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),

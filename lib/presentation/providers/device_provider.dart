@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/utils/logger.dart';
+import '../../core/services/device_connection_service.dart';
 import '../../data/models/device_model.dart';
 import '../../data/datasources/remote/device_remote_datasource.dart';
 import '../../data/datasources/local/device_local_datasource.dart';
@@ -8,12 +9,16 @@ import '../../data/datasources/local/device_local_datasource.dart';
 class DeviceProvider extends ChangeNotifier {
   final DeviceRemoteDataSource _deviceRemoteDataSource = DeviceRemoteDataSource();
   final DeviceLocalDataSource _deviceLocalDataSource = DeviceLocalDataSource();
+  final DeviceConnectionService _connectionService = DeviceConnectionService();
 
   List<DeviceModel> _devices = [];
+  DeviceModel? _connectedDevice;
   bool _isLoading = false;
   String? _error;
 
   List<DeviceModel> get devices => _devices;
+  DeviceModel? get connectedDevice => _connectedDevice;
+  bool get isConnected => _connectedDevice != null;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -44,6 +49,58 @@ class DeviceProvider extends ChangeNotifier {
       Logger.error('Failed to add device: $e');
       _setError('Failed to add device');
     }
+  }
+
+  /// Connect to a device by IP address
+  Future<bool> connectToDevice({
+    required String deviceId,
+    required String deviceName,
+    required String ipAddress,
+    int port = 5000,
+  }) async {
+    try {
+      Logger.info('Connecting to device: $deviceId at $ipAddress:$port');
+      
+      final success = await _connectionService.connectToDevice(
+        deviceId: deviceId,
+        ipAddress: ipAddress,
+        port: port,
+      );
+
+      if (success) {
+        // Create device model for connected device
+        _connectedDevice = DeviceModel(
+          id: deviceId,
+          name: deviceName,
+          deviceType: 'MUSHROOM_CHAMBER',
+          status: 'ONLINE',
+          userId: '', // Will be set from auth
+          configuration: {
+            'ipAddress': ipAddress,
+            'port': port,
+          },
+          createdAt: DateTime.now(),
+        );
+        
+        notifyListeners();
+        Logger.info('✅ Connected to device: $deviceName');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      Logger.error('Failed to connect to device: $e');
+      _setError('Failed to connect to device');
+      return false;
+    }
+  }
+
+  /// Disconnect from current device
+  void disconnectDevice() {
+    _connectionService.disconnect();
+    _connectedDevice = null;
+    notifyListeners();
+    Logger.info('Disconnected from device');
   }
 
   Future<void> updateDevice(DeviceModel device) async {
