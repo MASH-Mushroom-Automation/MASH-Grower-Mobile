@@ -8,7 +8,7 @@ import '../../widgets/common/bottom_nav_bar.dart';
 import 'chamber_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'user_settings_screen.dart';
-import '../devices/direct_device_connection_screen.dart';
+import '../devices/hybrid_device_connection_screen.dart';
 import '../profile/profile_screen.dart';
 import '../automation/ai_automation_screen.dart';
 import '../analytics/analytics_screen.dart';
@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleConnect() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const DirectDeviceConnectionScreen()),
+      MaterialPageRoute(builder: (_) => const HybridDeviceConnectionScreen()),
     );
 
     // Refresh UI after connection
@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleAddNewDevice() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const DirectDeviceConnectionScreen()),
+      MaterialPageRoute(builder: (_) => const HybridDeviceConnectionScreen()),
     );
   }
 
@@ -155,12 +155,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
+      bottomNavigationBar: Consumer<DeviceProvider>(
+        builder: (context, deviceProvider, child) {
+          return BottomNavBar(
+            currentIndex: _currentNavIndex,
+            isDeviceConnected: deviceProvider.isConnected,
+            onTap: (index) {
+              setState(() {
+                _currentNavIndex = index;
+              });
+            },
+          );
         },
       ),
     );

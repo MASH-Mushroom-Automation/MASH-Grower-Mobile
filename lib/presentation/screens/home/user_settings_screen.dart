@@ -41,86 +41,6 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Color(0xFF2D5F4C),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                    ),
-                    child: user.profileImageUrl != null
-                        ? ClipOval(
-                            child: Image.network(
-                                user.profileImageUrl!,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Color(0xFF2D5F4C),
-                                  );
-                                },
-                              ),
-                          )
-                        : const Icon(
-                            Icons.person,
-                            size: 50,
-                            color: Color(0xFF2D5F4C),
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '${user.firstName} ${user.lastName}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Edit Profile'),
-                  ),
-                ],
-              ),
-            ),
-            
             const SizedBox(height: 24),
             
             // Settings Sections
@@ -187,40 +107,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
             
             const SizedBox(height: 16),
             
-            _buildSettingsSection(
-              context,
-              title: 'App Settings',
-              items: [
-                // _SettingsItem(
-                //   icon: Icons.dark_mode_outlined,
-                //   title: 'Dark Mode',
-                //   trailing: Consumer<ThemeProvider>(
-                //     builder: (context, themeProvider, child) {
-                //       final isDark = themeProvider.themeMode == ThemeMode.dark;
-                //       return Switch(
-                //         value: isDark,
-                //         onChanged: (value) {
-                //           themeProvider.setThemeMode(
-                //             value ? ThemeMode.dark : ThemeMode.light,
-                //           );
-                //         },
-                //         activeTrackColor: const Color(0xFF2D5F4C),
-                //       );
-                //     },
-                //   ),
-                // ),
-                _SettingsItem(
-                  icon: Icons.language,
-                  title: 'Language',
-                  subtitle: 'English',
-                  onTap: () {
-                    // TODO: Navigate to language settings
-                  },
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
+            // App Settings section removed (Language not supported)
             
             _buildSettingsSection(
               context,

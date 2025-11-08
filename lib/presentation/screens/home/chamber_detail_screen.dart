@@ -2,8 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/device_connection_service.dart';
+import '../../../core/services/mock_device_service.dart';
 import '../../../core/utils/logger.dart';
 import '../../providers/device_provider.dart';
+import '../../widgets/common/bottom_nav_bar.dart';
+import '../automation/ai_automation_screen.dart';
+import '../analytics/analytics_screen.dart';
+import 'user_settings_screen.dart';
 
 class ChamberDetailScreen extends StatefulWidget {
   const ChamberDetailScreen({super.key});
@@ -14,7 +19,9 @@ class ChamberDetailScreen extends StatefulWidget {
 
 class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   final DeviceConnectionService _deviceService = DeviceConnectionService();
+  final MockDeviceService _mockService = MockDeviceService();
   Timer? _sensorUpdateTimer;
+  int _currentNavIndex = 0;
   
   bool _tempSensorOn = true;
   bool _humiditySensorOn = true;
@@ -102,27 +109,59 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   Future<void> _fetchSensorData() async {
     if (_isLoadingSensorData) return;
     
+    final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+    final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+    
+    if (isMock) {
+      if (!_mockService.isConnected) {
+        Logger.warning('Mock device not connected');
+        return;
+      }
+    } else {
+      if (!_deviceService.isConnected) {
+        Logger.warning('Cannot fetch sensor data - no device connected');
+        if (deviceProvider.connectedDevice != null) {
+          final device = deviceProvider.connectedDevice!;
+          Logger.info('Attempting to reconnect to device: ${device.name}');
+          try {
+            await _deviceService.connectToDevice(
+              deviceId: device.id,
+              ipAddress: device.configuration?['ipAddress'] ?? '',
+              port: device.configuration?['port'] ?? 5000,
+            );
+          } catch (e) {
+            Logger.error('Failed to reconnect to device: $e');
+            return;
+          }
+        } else {
+          Logger.error('No device available to connect');
+          return;
+        }
+      }
+    }
+    
     setState(() {
       _isLoadingSensorData = true;
     });
 
     try {
-      final sensorData = await _deviceService.getSensorData();
-      final actuatorStates = await _deviceService.getActuatorStates();
+      final sensorData = isMock 
+          ? await _mockService.getSensorData()
+          : await _deviceService.getSensorData();
+      final actuatorStates = isMock
+          ? await _mockService.getActuatorStates()
+          : await _deviceService.getActuatorStates();
       
       if (sensorData != null && mounted) {
+        Logger.info('✅ Sensor data received - Temp: ${sensorData.temperature}°C, Humidity: ${sensorData.humidity}%, CO2: ${sensorData.co2}ppm');
         setState(() {
-          _currentTemp = sensorData.temperature ?? _currentTemp;
-          _currentHumidity = sensorData.humidity ?? _currentHumidity;
-          _currentCO2 = sensorData.co2 ?? _currentCO2;
+          _currentTemp = sensorData.temperature;
+          _currentHumidity = sensorData.humidity;
+          _currentCO2 = sensorData.co2;
           
-          // Update mode from device
-          if (sensorData.mode != null) {
-            _selectedMode = sensorData.mode == 's' ? 'Spawning Phase' : 'Fruiting Phase';
-            _fanOn = _modeSettings['fanEnabled'];
-          }
+          _selectedMode = sensorData.mode == 's' ? 'Spawning Phase' : 'Fruiting Phase';
+          _fanOn = _modeSettings['fanEnabled'];
           
-          // Update actuator states from device
           if (actuatorStates != null) {
             _fanOn = actuatorStates['exhaust_fan'] ?? _fanOn;
             _humidifierOn = actuatorStates['humidifier'] ?? _humidifierOn;
@@ -130,9 +169,20 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
             _ledOn = actuatorStates['led_lights'] ?? _ledOn;
           }
         });
+      } else {
+        Logger.warning('No sensor data received from device');
       }
     } catch (e) {
       Logger.error('Failed to fetch sensor data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to get sensor data: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -294,14 +344,17 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                           );
                         }).toList(),
                         onChanged: (value) async {
-                          // Send mode change to device
+                          final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+                          final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+                          
                           final mode = value == 'Spawning Phase' ? 's' : 'f';
-                          final success = await _deviceService.setMode(mode);
+                          final success = isMock
+                              ? await _mockService.setMode(mode)
+                              : await _deviceService.setMode(mode);
                           
                           if (success) {
                             setState(() {
                               _selectedMode = value!;
-                              // Update fan state based on mode
                               _fanOn = _modeSettings['fanEnabled'];
                             });
                             _showModeChangeConfirmation(value!);
@@ -583,7 +636,11 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                       label: 'Exhaust Fan',
                       isOn: _fanOn,
                       onToggle: (value) async {
-                        final success = await _deviceService.controlActuator('exhaust_fan', value);
+                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+                        final success = isMock
+                            ? await _mockService.setActuator('exhaust_fan', value)
+                            : await _deviceService.controlActuator('exhaust_fan', value);
                         if (success) {
                           setState(() {
                             _fanOn = value;
@@ -603,7 +660,11 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                       label: 'Humidifier',
                       isOn: _humidifierOn,
                       onToggle: (value) async {
-                        final success = await _deviceService.controlActuator('humidifier', value);
+                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+                        final success = isMock
+                            ? await _mockService.setActuator('humidifier', value)
+                            : await _deviceService.controlActuator('humidifier', value);
                         if (success) {
                           setState(() {
                             _humidifierOn = value;
@@ -623,7 +684,11 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                       label: 'Blower Fan',
                       isOn: _blowerFanOn,
                       onToggle: (value) async {
-                        final success = await _deviceService.controlActuator('blower_fan', value);
+                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+                        final success = isMock
+                            ? await _mockService.setActuator('blower_fan', value)
+                            : await _deviceService.controlActuator('blower_fan', value);
                         if (success) {
                           setState(() {
                             _blowerFanOn = value;
@@ -643,7 +708,11 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                       label: 'LED Lights',
                       isOn: _ledOn,
                       onToggle: (value) async {
-                        final success = await _deviceService.controlActuator('led_lights', value);
+                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+                        final success = isMock
+                            ? await _mockService.setActuator('led_lights', value)
+                            : await _deviceService.controlActuator('led_lights', value);
                         if (success) {
                           setState(() {
                             _ledOn = value;
@@ -665,6 +734,45 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
             // 
           ],
         ),
+      ),
+      bottomNavigationBar: Consumer<DeviceProvider>(
+        builder: (context, deviceProvider, child) {
+          return BottomNavBar(
+            currentIndex: _currentNavIndex,
+            isDeviceConnected: deviceProvider.isConnected,
+            onTap: (index) {
+              if (index == _currentNavIndex) return;
+              
+              setState(() {
+                _currentNavIndex = index;
+              });
+              
+              // Navigate based on index
+              if (index == 0) {
+                // Already on home/chamber detail
+                Navigator.pop(context);
+              } else if (index == 1) {
+                // AI Automation
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AIAutomationScreen()),
+                );
+              } else if (index == 2) {
+                // Analytics
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+                );
+              } else if (index == 3) {
+                // Settings
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UserSettingsScreen()),
+                );
+              }
+            },
+          );
+        },
       ),
     );
   }

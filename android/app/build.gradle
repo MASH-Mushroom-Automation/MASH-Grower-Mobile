@@ -55,13 +55,7 @@ android {
     }
 
     signingConfigs {
-        release {
-            // Configure your release signing here
-            // keyAlias keystoreProperties['keyAlias']
-            // keyPassword keystoreProperties['keyPassword']
-            // storeFile keystoreProperties['storeFile']
-            // storePassword keystoreProperties['storePassword']
-        }
+        // Use Flutter's default debug signing
     }
 
     buildTypes {
@@ -75,12 +69,12 @@ android {
         
         release {
             debuggable false
-            minifyEnabled true
-            shrinkResources true
-            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            // Use default signing for now
             
             // Optimize for size and performance
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         
         profile {

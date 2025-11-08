@@ -60,3 +60,7 @@
 
 # Keep M.A.S.H. specific classes
 -keep class com.mash.grower.mobile.** { *; }
+
+# Keep Google Play Core classes (for deferred components)
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**

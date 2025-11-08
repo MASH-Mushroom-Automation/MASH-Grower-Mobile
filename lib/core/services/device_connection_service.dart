@@ -142,17 +142,28 @@ class DeviceConnectionService {
     }
 
     try {
-      final response = await _dio.get('${_currentDevice!.baseUrl}/sensor/current');
+      final url = '${_currentDevice!.baseUrl}/sensor/current';
+      Logger.debug('📡 Fetching sensor data from: $url');
+      
+      final response = await _dio.get(url);
+      
+      Logger.debug('📥 Response status: ${response.statusCode}');
+      Logger.debug('📥 Response data: ${response.data}');
       
       if (response.statusCode == 200 && response.data['success'] == true) {
+        Logger.debug('✅ Parsing sensor data...');
         final data = DeviceSensorData.fromJson(response.data['data']);
+        Logger.info('📊 Sensor data: Temp=${data.temperature}°C, Humidity=${data.humidity}%, CO2=${data.co2}ppm');
         _sensorDataController.add(data);
         return data;
+      } else {
+        Logger.warning('⚠️ Invalid response: success=${response.data['success']}, status=${response.statusCode}');
       }
 
       return null;
-    } catch (e) {
-      Logger.error('❌ Failed to get sensor data', e);
+    } catch (e, stackTrace) {
+      Logger.error('❌ Failed to get sensor data: $e');
+      Logger.debug('Stack trace: $stackTrace');
       return null;
     }
   }

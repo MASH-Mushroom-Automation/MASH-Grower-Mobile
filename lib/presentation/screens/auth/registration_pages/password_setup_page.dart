@@ -62,18 +62,8 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
     provider.setPassword(_passwordController.text);
     provider.setConfirmPassword(_confirmPasswordController.text);
 
-    // Complete registration
-    final success = await provider.completeRegistration();
-    if (success && mounted) {
-      widget.onNext();
-    } else if (mounted && provider.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error!),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    // Just proceed to review page - actual registration happens there
+    widget.onNext();
   }
 
   @override

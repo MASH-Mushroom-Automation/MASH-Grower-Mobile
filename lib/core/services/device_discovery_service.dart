@@ -53,28 +53,17 @@ class DeviceDiscoveryService {
       _devicesController.add(_discoveredDevices);
 
       Logger.info('🔍 Starting device discovery on port $discoveryPort');
+      Logger.warning('⚠️ UDP broadcast not supported on mobile. Please use mDNS discovery or manual IP connection instead.');
 
-      // Bind to any available port for receiving responses
-      _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      _socket!.broadcastEnabled = true;
-
-      // Listen for responses from devices
-      _socket!.listen((RawSocketEvent event) {
-        if (event == RawSocketEvent.read) {
-          final datagram = _socket!.receive();
-          if (datagram != null) {
-            _handleDeviceResponse(datagram);
-          }
-        }
-      });
-
-      // Send broadcast message periodically
-      _scanTimer = Timer.periodic(scanInterval, (_) => _sendBroadcast());
+      // Note: RawDatagramSocket.bind(InternetAddress.anyIPv4, 0) is not supported on mobile
+      // Use mDNS discovery (MDNSDiscoveryService) or manual IP connection instead
+      // This method is kept for backward compatibility but will not work on mobile
       
-      // Send initial broadcast
-      _sendBroadcast();
-
-      Logger.info('✅ Device discovery started');
+      _isScanning = false;
+      throw UnsupportedError(
+        'UDP broadcast discovery is not supported on mobile platforms. '
+        'Please use mDNS discovery (Local Network tab) or Manual IP connection instead.'
+      );
     } catch (e) {
       Logger.error('❌ Failed to start device discovery', e);
       _isScanning = false;

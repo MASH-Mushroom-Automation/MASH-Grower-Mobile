@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/device_connection_service.dart';
+import '../../../core/services/mock_device_service.dart';
+import '../../providers/device_provider.dart';
 
 class AIAutomationScreen extends StatefulWidget {
   const AIAutomationScreen({super.key});
@@ -10,6 +13,7 @@ class AIAutomationScreen extends StatefulWidget {
 
 class _AIAutomationScreenState extends State<AIAutomationScreen> {
   final DeviceConnectionService _deviceService = DeviceConnectionService();
+  final MockDeviceService _mockService = MockDeviceService();
   bool _isAutomationEnabled = false;
   bool _isLoading = true;
   Map<String, dynamic>? _automationStatus;
@@ -26,9 +30,18 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final status = await _deviceService.getAutomationStatus();
-      final actuators = await _deviceService.getActuatorStates();
-      final history = await _deviceService.getAutomationHistory(limit: 10);
+      final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+      final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+      
+      final status = isMock
+          ? await _mockService.getAutomationStatus()
+          : await _deviceService.getAutomationStatus();
+      final actuators = isMock
+          ? await _mockService.getActuatorStates()
+          : await _deviceService.getActuatorStates();
+      final history = isMock
+          ? await _mockService.getAutomationHistory(limit: 10)
+          : await _deviceService.getAutomationHistory(limit: 10);
       
       if (mounted) {
         setState(() {
@@ -50,9 +63,12 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+      final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+      
       final success = value
-          ? await _deviceService.enableAutomation()
-          : await _deviceService.disableAutomation();
+          ? (isMock ? await _mockService.enableAutomation() : await _deviceService.enableAutomation())
+          : (isMock ? await _mockService.disableAutomation() : await _deviceService.disableAutomation());
 
       if (success && mounted) {
         setState(() {

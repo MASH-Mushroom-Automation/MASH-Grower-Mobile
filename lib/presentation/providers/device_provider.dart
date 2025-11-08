@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/utils/logger.dart';
 import '../../core/services/device_connection_service.dart';
+import '../../core/services/mock_device_service.dart';
 import '../../data/models/device_model.dart';
 import '../../data/datasources/remote/device_remote_datasource.dart';
 import '../../data/datasources/local/device_local_datasource.dart';
@@ -10,11 +11,13 @@ class DeviceProvider extends ChangeNotifier {
   final DeviceRemoteDataSource _deviceRemoteDataSource = DeviceRemoteDataSource();
   final DeviceLocalDataSource _deviceLocalDataSource = DeviceLocalDataSource();
   final DeviceConnectionService _connectionService = DeviceConnectionService();
+  final MockDeviceService _mockService = MockDeviceService();
 
   List<DeviceModel> _devices = [];
   DeviceModel? _connectedDevice;
   bool _isLoading = false;
   String? _error;
+  bool _isMockDevice = false;
 
   List<DeviceModel> get devices => _devices;
   DeviceModel? get connectedDevice => _connectedDevice;
@@ -95,9 +98,54 @@ class DeviceProvider extends ChangeNotifier {
     }
   }
 
+  /// Connect to a mock device for testing
+  Future<bool> connectToMockDevice({
+    required String deviceId,
+    required String deviceName,
+  }) async {
+    try {
+      Logger.info('Connecting to mock device: $deviceId');
+      
+      final success = await _mockService.connectToDevice(
+        deviceId: deviceId,
+        deviceName: deviceName,
+      );
+
+      if (success) {
+        _connectedDevice = DeviceModel(
+          id: deviceId,
+          name: deviceName,
+          deviceType: 'MUSHROOM_CHAMBER',
+          status: 'ONLINE',
+          userId: '',
+          configuration: {
+            'isMock': true,
+          },
+          createdAt: DateTime.now(),
+        );
+        
+        _isMockDevice = true;
+        notifyListeners();
+        Logger.info('Connected to mock device: $deviceName');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      Logger.error('Failed to connect to mock device: $e');
+      _setError('Failed to connect to mock device');
+      return false;
+    }
+  }
+
   /// Disconnect from current device
   void disconnectDevice() {
-    _connectionService.disconnect();
+    if (_isMockDevice) {
+      _mockService.disconnect();
+      _isMockDevice = false;
+    } else {
+      _connectionService.disconnect();
+    }
     _connectedDevice = null;
     notifyListeners();
     Logger.info('Disconnected from device');

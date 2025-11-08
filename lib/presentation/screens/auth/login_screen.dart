@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/utils/validators.dart';
 import '../../widgets/common/validated_text_field.dart';
+import '../../widgets/auth/recent_accounts_widget.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
 import 'registration_flow_screen.dart';
@@ -131,39 +132,60 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 40),
                 
+                // Recent Accounts Widget
+                RecentAccountsWidget(
+                  onAccountSelected: (email) {
+                    setState(() {
+                      _emailController.text = email;
+                    });
+                    // Focus on password field
+                    FocusScope.of(context).nextFocus();
+                  },
+                ),
+                
                 // Email Input
-                ValidatedTextField(
-                  key: const Key('login_email_field'),
-                  controller: _emailController,
-                  label: 'Email',
-                  hintText: 'Enter email',
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.validateEmail,
-                  prefixIcon: const Icon(Icons.email_outlined),
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    return ValidatedTextField(
+                      key: const Key('login_email_field'),
+                      controller: _emailController,
+                      label: 'Email',
+                      hintText: 'Enter email',
+                      keyboardType: TextInputType.emailAddress,
+                      validator: Validators.validateEmail,
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      enabled: !authProvider.isLoading,
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 20),
                 
                 // Password Input
-                ValidatedTextField(
-                  key: const Key('login_password_field'),
-                  controller: _passwordController,
-                  label: 'Password',
-                  hintText: 'Enter Password',
-                  obscureText: _obscurePassword,
-                  validator: Validators.validatePassword,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF2D5F4C),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    return ValidatedTextField(
+                      key: const Key('login_password_field'),
+                      controller: _passwordController,
+                      label: 'Password',
+                      hintText: 'Enter Password',
+                      obscureText: _obscurePassword,
+                      validator: Validators.validatePassword,
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      enabled: !authProvider.isLoading,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: const Color(0xFF2D5F4C),
+                        ),
+                        onPressed: authProvider.isLoading ? null : () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 16),

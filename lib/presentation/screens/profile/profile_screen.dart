@@ -45,49 +45,76 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                // Profile Header
+                // Profile Header - Horizontal Layout
                 Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300, width: 1),
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       children: [
+                        // Avatar on the left
                         CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          radius: 40,
+                          backgroundColor: const Color(0xFF2D5F4C),
                           backgroundImage: user.profileImageUrl != null
                               ? NetworkImage(user.profileImageUrl!)
                               : null,
                           child: user.profileImageUrl == null
-                              ? Text(
-                                  user.displayName.isNotEmpty
-                                      ? user.displayName[0].toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                              ? Icon(
+                                  Icons.person,
+                                  size: 40,
+                                  color: Colors.white,
                                 )
                               : null,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          user.displayName,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 16),
+                        // Name and email in the middle
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.displayName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2E2E2E),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                user.email,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user.email,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        // Edit button on the right
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey.shade400, width: 1.5),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Chip(
-                          label: Text(user.role?.toUpperCase() ?? 'USER'),
-                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.edit_outlined,
+                              color: Colors.grey.shade700,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Edit profile not implemented yet')),
+                              );
+                            },
+                            tooltip: 'Edit Profile',
+                          ),
                         ),
                       ],
                     ),
