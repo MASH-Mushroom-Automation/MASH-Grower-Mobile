@@ -32,8 +32,8 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   bool _ledOn = false;  // Default OFF
   
   // Mode selection
-  String _selectedMode = 'Spawning Phase';
-  final List<String> _modes = ['Spawning Phase', 'Fruiting Phase'];
+  String _selectedMode = 'Fruiting Phase';
+  final List<String> _modes = ['Fruiting Phase ', 'Spawning Phase'];
   
   // Real sensor data
   double _currentTemp = 23.0;
@@ -50,7 +50,7 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
         'co2Min': 5000.0,
         'co2Max': 5000.0,
         'description': 'Fan disabled to allow CO2 accumulation',
-        'color': const Color(0xFF9C27B0), // Purple
+        'color': const Color.fromARGB(255, 123, 172, 149), 
       };
     } else {
       return {
@@ -59,7 +59,7 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
         'co2Min': 300.0,
         'co2Max': 800.0,
         'description': 'Fan enabled for proper air circulation',
-        'color': const Color(0xFF4CAF50), // Green
+        'color': const Color(0xFF4CAF50),
       };
     }
   }
@@ -85,7 +85,7 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   }
   
   Color get _co2StatusColor {
-    if (_co2Status.startsWith('ALERT')) return Colors.red;
+    if (_co2Status.startsWith('ALERT')) return const Color.fromARGB(255, 179, 40, 30);
     if (_co2Status.startsWith('WARNING')) return Colors.orange;
     return Colors.green;
   }
@@ -223,8 +223,8 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                     // Live indicator
                     if (!_isLoadingSensorData)
                       Container(
-                        width: 8,
-                        height: 8,
+                        width: 4,
+                        height: 4,
                         decoration: BoxDecoration(
                           color: Colors.green,
                           shape: BoxShape.circle,
@@ -255,10 +255,6 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
           IconButton(
             icon: const Icon(Icons.edit, color: Color(0xFF2D5F4C)),
             onPressed: _showEditOptions,
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings, color: Color(0xFF2D5F4C)),
-            onPressed: _showSettingsOptions,
           ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: Color(0xFF2D5F4C)),
@@ -302,7 +298,7 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
-                          Icons.settings_suggest,
+                          Icons.settings_remote,
                           color: Colors.white,
                           size: 24,
                         ),
@@ -325,51 +321,141 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedMode,
-                        isExpanded: true,
-                        icon: Icon(Icons.arrow_drop_down, color: _modeSettings['color']),
-                        items: _modes.map((mode) {
-                          return DropdownMenuItem(
-                            value: mode,
-                            child: Text(
-                              mode,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: _modeSettings['color'],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Left Arrow Button
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              final currentIndex = _modes.indexOf(_selectedMode);
+                              if (currentIndex > 0) {
+                                final newMode = _modes[currentIndex - 1];
+                                final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+                                final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+                                
+                                final mode = newMode == 'Spawning Phase' ? 's' : 'f';
+                                final success = isMock
+                                    ? await _mockService.setMode(mode)
+                                    : await _deviceService.setMode(mode);
+                                
+                                if (success) {
+                                  setState(() {
+                                    _selectedMode = newMode;
+                                    _fanOn = _modeSettings['fanEnabled'];
+                                  });
+                                  _showModeChangeConfirmation(newMode);
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Failed to change device mode'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: _modes.indexOf(_selectedMode) > 0
+                                    ? _modeSettings['color'].withValues(alpha: 0.15)
+                                    : Colors.grey.shade200,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _modes.indexOf(_selectedMode) > 0
+                                      ? _modeSettings['color'].withValues(alpha: 0.3)
+                                      : Colors.grey.shade300,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.chevron_left,
+                                color: _modes.indexOf(_selectedMode) > 0
+                                    ? _modeSettings['color']
+                                    : Colors.grey.shade400,
+                                size: 24,
                               ),
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (value) async {
-                          final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-                          final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
-                          
-                          final mode = value == 'Spawning Phase' ? 's' : 'f';
-                          final success = isMock
-                              ? await _mockService.setMode(mode)
-                              : await _deviceService.setMode(mode);
-                          
-                          if (success) {
-                            setState(() {
-                              _selectedMode = value!;
-                              _fanOn = _modeSettings['fanEnabled'];
-                            });
-                            _showModeChangeConfirmation(value!);
-                          } else {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Failed to change device mode'),
-                                  backgroundColor: Colors.red,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            _selectedMode,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: _modeSettings['color'],
+                            ),
+                          ),
+                        ),
+                        // Right Arrow Button
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              final currentIndex = _modes.indexOf(_selectedMode);
+                              if (currentIndex < _modes.length - 1) {
+                                final newMode = _modes[currentIndex + 1];
+                                final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+                                final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+                                
+                                final mode = newMode == 'Spawning Phase' ? 's' : 'f';
+                                final success = isMock
+                                    ? await _mockService.setMode(mode)
+                                    : await _deviceService.setMode(mode);
+                                
+                                if (success) {
+                                  setState(() {
+                                    _selectedMode = newMode;
+                                    _fanOn = _modeSettings['fanEnabled'];
+                                  });
+                                  _showModeChangeConfirmation(newMode);
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Failed to change device mode'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: _modes.indexOf(_selectedMode) < _modes.length - 1
+                                    ? _modeSettings['color'].withValues(alpha: 0.15)
+                                    : Colors.grey.shade200,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _modes.indexOf(_selectedMode) < _modes.length - 1
+                                      ? _modeSettings['color'].withValues(alpha: 0.3)
+                                      : Colors.grey.shade300,
+                                  width: 1.5,
                                 ),
-                              );
-                            }
-                          }
-                        },
-                      ),
+                              ),
+                              child: Icon(
+                                Icons.chevron_right,
+                                color: _modes.indexOf(_selectedMode) < _modes.length - 1
+                                    ? _modeSettings['color']
+                                    : Colors.grey.shade400,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -904,128 +990,121 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
     required Function(bool)? onToggle,
     bool isDisabled = false,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDisabled
-              ? [Colors.grey.shade200, Colors.grey.shade300]
-              : isOn
-                  ? [const Color(0xFFE8F5E8), const Color(0xFFD4ECD4)]
-                  : [Colors.white, const Color(0xFFF5F5F5)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isOn
-              ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
-              : Colors.transparent,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isOn
-                ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
-                : Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return InkWell(
+      onTap: isDisabled ? null : () => onToggle?.call(!isOn),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDisabled
+                ? [Colors.grey.shade200, Colors.grey.shade300]
+                : isOn
+                    ? [const Color(0xFFE8F5E8), const Color(0xFFD4ECD4)]
+                    : [Colors.grey.shade300, Colors.grey.shade400],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Icon with conditional styling
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDisabled
-                      ? [Colors.grey.shade300, Colors.grey.shade400]
-                      : isOn
-                          ? [const Color(0xFF4CAF50), const Color(0xFF66BB6A)]
-                          : [const Color(0xFF2D5F4C), const Color(0xFF4CAF50)],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: (isDisabled
-                            ? Colors.grey
-                            : isOn
-                                ? const Color(0xFF4CAF50)
-                                : const Color(0xFF2D5F4C))
-                        .withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Label
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isDisabled ? Colors.grey : const Color(0xFF2D5F4C),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Status and Toggle
-            Column(
-              children: [
-                // Status badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDisabled
-                        ? Colors.grey.withValues(alpha: 0.2)
-                        : isOn
-                            ? Colors.green.withValues(alpha: 0.2)
-                            : Colors.grey.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    isDisabled ? 'DISABLED' : (isOn ? 'ACTIVE' : 'INACTIVE'),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isDisabled
-                          ? Colors.grey.shade600
-                          : isOn
-                              ? Colors.green.shade700
-                              : Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: isOn,
-                    onChanged: isDisabled ? null : onToggle,
-                    activeTrackColor: const Color(0xFF4CAF50),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isOn
+                ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+                : Colors.grey.shade400.withValues(alpha: 0.3),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isOn
+                  ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
+                  : Colors.grey.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icon with conditional styling
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDisabled
+                        ? [Colors.grey.shade300, Colors.grey.shade400]
+                        : isOn
+                            ? [const Color(0xFF4CAF50), const Color(0xFF66BB6A)]
+                            : [Colors.grey.shade500, Colors.grey.shade600],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isDisabled
+                              ? Colors.grey
+                              : isOn
+                                  ? const Color(0xFF4CAF50)
+                                  : Colors.grey.shade600)
+                          .withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Label
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDisabled
+                      ? Colors.grey.shade600
+                      : isOn
+                          ? const Color(0xFF2D5F4C)
+                          : Colors.grey.shade700,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Status badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDisabled
+                      ? Colors.grey.withValues(alpha: 0.2)
+                      : isOn
+                          ? Colors.green.withValues(alpha: 0.2)
+                          : Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isDisabled ? 'DISABLED' : (isOn ? 'ACTIVE' : 'INACTIVE'),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isDisabled
+                        ? Colors.grey.shade600
+                        : isOn
+                            ? Colors.green.shade700
+                            : Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1033,49 +1112,118 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
 
 
   void _showEditOptions() {
-    showDialog(
+    final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+    final device = deviceProvider.connectedDevice;
+    
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Chamber'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Chamber Name',
-                hintText: 'Enter chamber name',
-              ),
-              controller: TextEditingController(text: 'Chamber 1'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Location',
-                hintText: 'Enter location',
-              ),
-              controller: TextEditingController(text: 'Main Facility'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _EditChamberModal(
+        initialName: device?.name ?? 'Chamber 1',
+        initialLocation: device?.configuration?['location']?.toString() ?? 'Main Facility',
+        initialDescription: device?.configuration?['description']?.toString() ?? '',
+        onSave: (name, location, description) async {
+          final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+          final currentDevice = deviceProvider.connectedDevice;
+          
+          if (currentDevice == null) {
+            Logger.error('Cannot update: No device connected');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No device connected'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+          
+          Logger.info('Updating chamber - Current: "${currentDevice.name}", New: "$name"');
+          Logger.info('Device ID: ${currentDevice.id}');
+          
+          try {
+            // Create updated configuration - properly merge with existing config
+            final existingConfig = currentDevice.configuration ?? {};
+            final updatedConfig = Map<String, dynamic>.from(existingConfig);
+            updatedConfig['location'] = location;
+            if (description.isNotEmpty) {
+              updatedConfig['description'] = description;
+            } else {
+              updatedConfig.remove('description');
+            }
+            
+            Logger.info('Updated config: $updatedConfig');
+            
+            // Create updated device model
+            final updatedDevice = currentDevice.copyWith(
+              name: name,
+              configuration: updatedConfig,
+            );
+            
+            Logger.info('Created updated device model: ${updatedDevice.name}');
+            Logger.info('Updated device ID: ${updatedDevice.id}');
+            
+            // Update device via provider
+            await deviceProvider.updateDevice(updatedDevice);
+            
+            // Verify the update
+            final verifyDevice = deviceProvider.connectedDevice;
+            if (verifyDevice?.name == name) {
+              Logger.info(' Device name successfully updated to: $name');
+            } else {
+              Logger.warning('Device name verification failed. Expected: $name, Got: ${verifyDevice?.name}');
+            }
+            
+            // TODO: Implement remote API update when backend is ready
+            // await deviceProvider._deviceRemoteDataSource.updateDevice(updatedDevice);
+            
+            if (mounted) {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chamber updated successfully')),
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
+                      const Text('Chamber updated successfully'),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF4CAF50),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2D5F4C),
-            ),
-            child: const Text('Save'),
-          ),
-        ],
+            }
+          } catch (e, stackTrace) {
+            Logger.error('Failed to update chamber: $e');
+            Logger.error('Stack trace: $stackTrace');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.error, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text('Failed to update: ${e.toString()}'),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          }
+        },
       ),
     );
   }
@@ -1161,6 +1309,17 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ListTile(
+                leading: const Icon(Icons.settings, color: Color(0xFF2D5F4C)),
+                title: const Text('Automation Settings'),
+                subtitle: const Text('Configure temperature, humidity, and schedules'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSettingsOptions();
+                },
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.info, color: Color(0xFF2D5F4C)),
                 title: const Text('Device Information'),
@@ -1411,6 +1570,354 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
               fontWeight: FontWeight.bold,
               color: color,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditChamberModal extends StatefulWidget {
+  final String initialName;
+  final String initialLocation;
+  final String initialDescription;
+  final Function(String name, String location, String description) onSave;
+
+  const _EditChamberModal({
+    required this.initialName,
+    required this.initialLocation,
+    required this.initialDescription,
+    required this.onSave,
+  });
+
+  @override
+  State<_EditChamberModal> createState() => _EditChamberModalState();
+}
+
+class _EditChamberModalState extends State<_EditChamberModal> {
+  final _formKey = GlobalKey<FormState>();
+  bool _isSaving = false;
+  late final TextEditingController _nameController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _descriptionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _locationController = TextEditingController(text: widget.initialLocation);
+    _descriptionController = TextEditingController(text: widget.initialDescription);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await widget.onSave(
+        _nameController.text.trim(),
+        _locationController.text.trim(),
+        _descriptionController.text.trim(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              //Rename Chamber
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D5F4C).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        color: Color(0xFF2D5F4C),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Edit Chamber',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D5F4C),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // Form fields
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Chamber Name Field
+                      _buildTextField(
+                        controller: _nameController,
+                        label: 'Chamber Name',
+                        hint: 'Enter chamber name',
+                        icon: Icons.devices,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Chamber name is required';
+                          }
+                          if (value.trim().length < 2) {
+                            return 'Name must be at least 2 characters';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Location Field
+                      _buildTextField(
+                        controller: _locationController,
+                        label: 'Location',
+                        hint: 'Enter location (e.g., Main Facility, Room 101)',
+                        icon: Icons.location_on,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Location is required';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Description Field (optional)
+                      _buildTextField(
+                        controller: _descriptionController,
+                        label: 'Description (Optional)',
+                        hint: 'Add a description for this chamber',
+                        icon: Icons.description,
+                        maxLines: 3,
+                        validator: null,
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _isSaving
+                                  ? null
+                                  : () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                side: const BorderSide(
+                                  color: Color(0xFF2D5F4C),
+                                  width: 2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF2D5F4C),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : _handleSave,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                backgroundColor: const Color(0xFF2D5F4C),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.save, size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Save Changes',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 16 : 0),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF2D5F4C)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2D5F4C),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF2D5F4C),
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1.5,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0xFF2D5F4C),
           ),
         ),
       ],

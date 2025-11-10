@@ -196,7 +196,7 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 18, 66, 9),
+                          backgroundColor: const Color.fromARGB(255, 45, 95, 76),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -324,7 +324,7 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                 child: Icon(
                   Icons.edit,
                   size: 18,
-                  color: const Color.fromARGB(255, 25, 138, 40).withOpacity(0.7),
+                  color: const Color.fromARGB(255, 76, 175, 80).withOpacity(0.7),
                 ),
               ),
             ),

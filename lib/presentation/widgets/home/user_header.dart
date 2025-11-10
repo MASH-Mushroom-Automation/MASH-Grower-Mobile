@@ -76,15 +76,15 @@ class UserHeader extends StatelessWidget {
           
           // Notification Bell
           Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E8),
-              shape: BoxShape.circle,
-            ),
+            width: 50,
+            height: 50,
+            margin: const EdgeInsets.only(left: 8),
             child: IconButton(
-              icon: const Icon(
-                Icons.notifications_outlined,
-                color: Color(0xFF2D5F4C),
-              ),
+                  icon: Icon(
+                  Icons.notifications_outlined,
+                  size: MediaQuery.of(context).size.width * 0.080, // Dynamic sizing
+                  color: const Color.fromARGB(255, 9, 156, 75),
+                  ),
               onPressed: onNotificationTap ?? () {},
             ),
           ),
