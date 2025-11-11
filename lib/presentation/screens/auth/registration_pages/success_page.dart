@@ -5,26 +5,17 @@ import '../../../providers/registration_provider.dart';
 import '../../auth/login_screen.dart';
 
 class SuccessPage extends StatelessWidget {
-  final VoidCallback? onNavigateToLogin;
-  
-  const SuccessPage({
-    super.key,
-    this.onNavigateToLogin,
-  });
+  const SuccessPage({super.key});
 
   void _handleComplete(BuildContext context) {
     // Reset registration provider
     context.read<RegistrationProvider>().reset();
     
-    // Navigate to login screen using callback or default navigation
-    if (onNavigateToLogin != null) {
-      onNavigateToLogin!();
-    } else {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+    // Navigate to login screen
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   @override

@@ -46,7 +46,10 @@ class ApiClient {
     void Function(int, int)? onReceiveProgress,
   }) async {
     try {
-      return await _dio.post<T>(
+      Logger.info('🌐 POST Request: $path');
+      Logger.info('📤 Request Data: $data');
+      
+      final response = await _dio.post<T>(
         path,
         data: data,
         queryParameters: queryParameters,
@@ -55,8 +58,18 @@ class ApiClient {
         onSendProgress: onSendProgress,
         onReceiveProgress: onReceiveProgress,
       );
+      
+      Logger.info('✅ POST Response: ${response.statusCode}');
+      return response;
     } on DioException catch (e) {
+      Logger.error('❌ POST Error: ${e.type}', e);
+      Logger.error('Error Message: ${e.message}');
+      Logger.error('Error Response: ${e.response?.data}');
       throw _handleError(e);
+    } catch (e, stackTrace) {
+      Logger.error('❌ Unexpected POST Error: $e', e);
+      Logger.error('Stack Trace: $stackTrace');
+      rethrow;
     }
   }
   

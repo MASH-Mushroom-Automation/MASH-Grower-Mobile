@@ -379,7 +379,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
   }
 
   Widget _buildUsageBar(String label, int count) {
-    const maxCount = 100;
+    final maxCount = 100;
     final percentage = (count / maxCount * 100).clamp(0, 100);
 
     return Container(

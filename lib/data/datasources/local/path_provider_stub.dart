@@ -1,4 +1,5 @@
 // Stub implementation for web platform
+import 'dart:io';
 
 class Directory {
   final String path;

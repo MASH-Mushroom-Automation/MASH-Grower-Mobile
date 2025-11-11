@@ -151,30 +151,30 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                const Card(
+                Card(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
                         ListTile(
-                          leading: Icon(Icons.device_hub, color: Colors.green),
-                          title: Text('Main Controller'),
-                          subtitle: Text('Online - All systems operational'),
-                          trailing: Icon(Icons.check_circle, color: Colors.green),
+                          leading: const Icon(Icons.device_hub, color: Colors.green),
+                          title: const Text('Main Controller'),
+                          subtitle: const Text('Online - All systems operational'),
+                          trailing: const Icon(Icons.check_circle, color: Colors.green),
                         ),
-                        Divider(),
+                        const Divider(),
                         ListTile(
-                          leading: Icon(Icons.sensors, color: Colors.green),
-                          title: Text('Sensor Array'),
-                          subtitle: Text('4 sensors active'),
-                          trailing: Icon(Icons.check_circle, color: Colors.green),
+                          leading: const Icon(Icons.sensors, color: Colors.green),
+                          title: const Text('Sensor Array'),
+                          subtitle: const Text('4 sensors active'),
+                          trailing: const Icon(Icons.check_circle, color: Colors.green),
                         ),
-                        Divider(),
+                        const Divider(),
                         ListTile(
-                          leading: Icon(Icons.air, color: Colors.orange),
-                          title: Text('Ventilation System'),
-                          subtitle: Text('Running at 60% capacity'),
-                          trailing: Icon(Icons.sync, color: Colors.orange),
+                          leading: const Icon(Icons.air, color: Colors.orange),
+                          title: const Text('Ventilation System'),
+                          subtitle: const Text('Running at 60% capacity'),
+                          trailing: const Icon(Icons.sync, color: Colors.orange),
                         ),
                       ],
                     ),

@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 
 import '../core/utils/logger.dart';
 import '../data/models/notification_model.dart';

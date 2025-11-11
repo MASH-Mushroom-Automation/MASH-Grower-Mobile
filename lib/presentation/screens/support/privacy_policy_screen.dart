@@ -145,15 +145,15 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.shield,
                     color: Colors.white,
                     size: 32,
                   ),
-                  SizedBox(width: 16),
-                  Expanded(
+                  const SizedBox(width: 16),
+                  const Expanded(
                     child: Text(
                       'We are committed to protecting your privacy and ensuring the security of your personal information.',
                       style: TextStyle(

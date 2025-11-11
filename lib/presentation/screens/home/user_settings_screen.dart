@@ -395,7 +395,7 @@ class _SettingsItem {
   final Widget? trailing;
   final VoidCallback? onTap;
 
-  const _SettingsItem({
+  _SettingsItem({
     required this.icon,
     required this.title,
     this.subtitle,

@@ -71,7 +71,7 @@ class NotificationModel extends Equatable {
       'type': type,
       'title': title,
       'message': message,
-      'data': data?.toString(),
+      'data': data != null ? data.toString() : null,
       'read': read ? 1 : 0,
       'created_at': createdAt.millisecondsSinceEpoch,
     };

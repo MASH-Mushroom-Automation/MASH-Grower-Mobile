@@ -19,7 +19,7 @@ class MockDeviceService {
   double _co2 = 800.0;
   String _mode = 'f';
   
-  final Map<String, bool> _actuatorStates = {
+  Map<String, bool> _actuatorStates = {
     'exhaust_fan': false,
     'humidifier': false,
     'blower_fan': false,

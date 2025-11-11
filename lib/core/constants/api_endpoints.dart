@@ -1,12 +1,7 @@
 class ApiEndpoints {
-  // Base URLs - Using Railway Production
-  static const String baseUrl = 'https://mash-backend-api-production.up.railway.app';
-  static const String apiVersion = '/api/v1';
-  static const String apiBaseUrl = '$baseUrl$apiVersion';
-  
-  // For backward compatibility
+  // Base URLs
   static const String devBaseUrl = 'http://localhost:3000/api/v1';
-  static const String prodBaseUrl = apiBaseUrl;
+  static const String prodBaseUrl = 'https://mash-backend-api-production.up.railway.app/api/v1';
   
   // WebSocket URLs
   static const String devWsUrl = 'ws://localhost:3000/ws';
@@ -14,70 +9,68 @@ class ApiEndpoints {
   
   // ========== Backend Authentication Endpoints ==========
   // Registration & Email Verification
-  static const String authRegister = '$apiBaseUrl/auth/register';
-  static const String authVerifyEmail = '$apiBaseUrl/auth/verify-email';
-  static const String authVerifyEmailCode = '$apiBaseUrl/auth/verify-email-code'; // 6-digit code (PRIMARY for mobile)
-  static const String authResendVerification = '$apiBaseUrl/auth/resend-verification';
-  static const String authResendVerificationCode = '$apiBaseUrl/auth/resend-verification-code'; // 6-digit code resend
+  static const String authRegister = '/auth/register';
+  static const String authVerifyEmail = '/auth/verify-email';
+  static const String authResendVerification = '/auth/resend-verification';
   
   // Login & Logout
-  static const String authLogin = '$apiBaseUrl/auth/login';
-  static const String authLogout = '$apiBaseUrl/auth/logout';
+  static const String authLogin = '/auth/login';
+  static const String authLogout = '/auth/logout';
   
   // Token Management
-  static const String authRefresh = '$apiBaseUrl/auth/refresh-token';
-  static const String authVerify = '$apiBaseUrl/auth/verify';
+  static const String authRefresh = '/auth/refresh';
+  static const String authVerify = '/auth/verify';
   
   // User Information
-  static const String authMe = '$apiBaseUrl/auth/me';
+  static const String authMe = '/auth/me';
   
   // Password Management
-  static const String authForgotPassword = '$apiBaseUrl/auth/forgot-password';
-  static const String authResetPassword = '$apiBaseUrl/auth/reset-password';
+  static const String authForgotPassword = '/auth/forgot-password';
+  static const String authResetPassword = '/auth/reset-password';
   
   // OAuth Endpoints
-  static const String authOAuthGoogle = '$apiBaseUrl/auth/oauth/google';
-  static const String authOAuthGithub = '$apiBaseUrl/auth/oauth/github';
-  static const String authOAuthFacebook = '$apiBaseUrl/auth/oauth/facebook';
-  static const String authOAuthCallback = '$apiBaseUrl/auth/oauth/callback';
+  static const String authOAuthGoogle = '/auth/oauth/google';
+  static const String authOAuthGithub = '/auth/oauth/github';
+  static const String authOAuthFacebook = '/auth/oauth/facebook';
+  static const String authOAuthCallback = '/auth/oauth/callback';
   
   // Legacy Firebase Exchange (to be deprecated)
-  static const String authExchange = '$apiBaseUrl/auth/exchange';
+  static const String authExchange = '/auth/exchange';
   
   // ========== Profile Management Endpoints ==========
-  static const String profile = '$apiBaseUrl/users/profile';
-  static const String profileAvatar = '$apiBaseUrl/users/profile/avatar';
-  static const String profilePassword = '$apiBaseUrl/users/change-password';
-  static const String profilePreferences = '$apiBaseUrl/users/profile/preferences';
+  static const String profile = '/profile';
+  static const String profileAvatar = '/profile/avatar';
+  static const String profilePassword = '/profile/password';
+  static const String profilePreferences = '/profile/preferences';
   
-  // Device Endpoints (Protected)
-  static const String devices = '$apiBaseUrl/devices';
-  static String deviceById(String id) => '$apiBaseUrl/devices/$id';
-  static String deviceStatus(String id) => '$apiBaseUrl/devices/$id/status';
-  static String deviceCommands(String id) => '$apiBaseUrl/devices/$id/commands';
-  static String deviceConfig(String id) => '$apiBaseUrl/devices/$id/config';
-  static String deviceLogs(String id) => '$apiBaseUrl/devices/$id/logs';
+  // Device Endpoints
+  static const String devices = '/devices';
+  static String deviceById(String id) => '/devices/$id';
+  static String deviceStatus(String id) => '/devices/$id/status';
+  static String deviceCommands(String id) => '/devices/$id/commands';
+  static String deviceConfig(String id) => '/devices/$id/config';
+  static String deviceLogs(String id) => '/devices/$id/logs';
   
-  // Sensor Endpoints (Protected)
-  static const String sensorData = '$apiBaseUrl/sensor-data';
-  static String sensorDataByDevice(String deviceId) => '$apiBaseUrl/sensor-data/device/$deviceId';
-  static String sensorLatest(String deviceId) => '$apiBaseUrl/sensor-data/device/$deviceId/latest';
-  static String sensorHistory(String deviceId) => '$apiBaseUrl/sensor-data/device/$deviceId/history';
-  static String sensorAnalytics(String deviceId) => '$apiBaseUrl/sensor-data/analytics/$deviceId';
-  static String sensorTrends(String deviceId) => '$apiBaseUrl/sensor-data/analytics/$deviceId/trends';
-  static String sensorAlerts(String deviceId) => '$apiBaseUrl/sensor-data/analytics/$deviceId/alerts';
-  static String sensorExport(String deviceId) => '$apiBaseUrl/sensor-data/analytics/$deviceId/export';
-  static const String sensorTypes = '$apiBaseUrl/sensor-data/types';
-  static String sensorCalibration(String deviceId) => '$apiBaseUrl/sensor-data/$deviceId/calibration';
-  static String sensorCalibrate(String deviceId) => '$apiBaseUrl/sensor-data/$deviceId/calibrate';
+  // Sensor Endpoints
+  static const String sensorData = '/sensors/data';
+  static String sensorDataByDevice(String deviceId) => '/sensors/data/$deviceId';
+  static String sensorLatest(String deviceId) => '/sensors/data/$deviceId/latest';
+  static String sensorHistory(String deviceId) => '/sensors/data/$deviceId/history';
+  static String sensorAnalytics(String deviceId) => '/sensors/analytics/$deviceId';
+  static String sensorTrends(String deviceId) => '/sensors/analytics/$deviceId/trends';
+  static String sensorAlerts(String deviceId) => '/sensors/analytics/$deviceId/alerts';
+  static String sensorExport(String deviceId) => '/sensors/analytics/$deviceId/export';
+  static const String sensorTypes = '/sensors/types';
+  static String sensorCalibration(String deviceId) => '/sensors/$deviceId/calibration';
+  static String sensorCalibrate(String deviceId) => '/sensors/$deviceId/calibrate';
   
-  // Alert Endpoints (Protected)
-  static const String alerts = '$apiBaseUrl/alerts';
-  static String alertById(String id) => '$apiBaseUrl/alerts/$id';
-  static String alertAcknowledge(String id) => '$apiBaseUrl/alerts/$id/acknowledge';
-  static String alertResolve(String id) => '$apiBaseUrl/alerts/$id/resolve';
-  static String alertConfig(String deviceId) => '$apiBaseUrl/alerts/config/$deviceId';
-  static String alertTest(String deviceId) => '$apiBaseUrl/alerts/test/$deviceId';
+  // Alert Endpoints
+  static const String alerts = '/alerts';
+  static String alertById(String id) => '/alerts/$id';
+  static String alertAcknowledge(String id) => '/alerts/$id/acknowledge';
+  static String alertResolve(String id) => '/alerts/$id/resolve';
+  static String alertConfig(String deviceId) => '/alerts/config/$deviceId';
+  static String alertTest(String deviceId) => '/alerts/test/$deviceId';
   
   // Notification Endpoints
   static const String notifications = '/notifications';

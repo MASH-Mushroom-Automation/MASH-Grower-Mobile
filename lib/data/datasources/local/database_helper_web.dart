@@ -1,7 +1,9 @@
 // Web-specific database helper using IndexedDB via shared_preferences
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/utils/logger.dart';
 
 class DatabaseHelper {

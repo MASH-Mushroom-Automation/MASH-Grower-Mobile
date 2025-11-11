@@ -138,7 +138,7 @@ class _WiFiDeviceConnectionScreenState extends State<WiFiDeviceConnectionScreen>
     try {
       // Get user ID from auth provider
       // TODO: Replace with actual auth provider
-      const userId = 'user_123';
+      final userId = 'user_123';
       final deviceName = _deviceNameController.text.trim();
       if (deviceName.isEmpty) {
         throw Exception('Please enter a device name');

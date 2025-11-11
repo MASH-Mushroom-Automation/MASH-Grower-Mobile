@@ -180,17 +180,17 @@ class _DirectDeviceConnectionScreenState extends State<DirectDeviceConnectionScr
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.all(20.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     children: [
                       Icon(
                         Icons.info_outline,
                         size: 48,
-                        color: Color(0xFF2E7D32),
+                        color: const Color(0xFF2E7D32),
                       ),
-                      SizedBox(height: 16),
-                      Text(
+                      const SizedBox(height: 16),
+                      const Text(
                         'Setup Instructions',
                         style: TextStyle(
                           fontSize: 18,
@@ -198,8 +198,8 @@ class _DirectDeviceConnectionScreenState extends State<DirectDeviceConnectionScr
                           color: Color(0xFF2E7D32),
                         ),
                       ),
-                      SizedBox(height: 12),
-                      Text(
+                      const SizedBox(height: 12),
+                      const Text(
                         '1. Ensure your MASH device is powered on\n'
                         '2. Connect your phone to the same WiFi network\n'
                         '3. Find your device IP address (check device display or router)\n'

@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 // Conditional imports for platform-specific code
 import 'package:path_provider/path_provider.dart' if (dart.library.html) 'package:mash_grower_mobile/data/datasources/local/path_provider_stub.dart';

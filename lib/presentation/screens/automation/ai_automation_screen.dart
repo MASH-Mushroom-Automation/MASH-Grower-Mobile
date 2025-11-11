@@ -186,7 +186,7 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
                       child: Switch(
                         value: _isAutomationEnabled,
                         onChanged: _toggleAutomation,
-                        activeThumbColor: Colors.white,
+                        activeColor: Colors.white,
                         activeTrackColor: Colors.white.withValues(alpha: 0.5),
                         inactiveThumbColor: Colors.white,
                         inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
@@ -519,9 +519,9 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.psychology,
-                    color: Color(0xFF4CAF50),
+                    color: const Color(0xFF4CAF50),
                     size: 20,
                   ),
                   const SizedBox(width: 8),

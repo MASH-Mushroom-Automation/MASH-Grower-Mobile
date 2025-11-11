@@ -23,9 +23,9 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   Timer? _sensorUpdateTimer;
   int _currentNavIndex = 0;
   
-  final bool _tempSensorOn = true;
-  final bool _humiditySensorOn = true;
-  final bool _co2SensorOn = true;
+  bool _tempSensorOn = true;
+  bool _humiditySensorOn = true;
+  bool _co2SensorOn = true;
   bool _fanOn = false;  // Default OFF
   bool _humidifierOn = false;  // Default OFF
   bool _blowerFanOn = false;  // Default OFF
@@ -1183,11 +1183,11 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Row(
+                  content: Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Chamber updated successfully'),
+                      const Icon(Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
+                      const Text('Chamber updated successfully'),
                     ],
                   ),
                   backgroundColor: const Color(0xFF4CAF50),

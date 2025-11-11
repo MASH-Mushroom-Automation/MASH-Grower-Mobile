@@ -118,7 +118,7 @@ class DeviceProvider extends ChangeNotifier {
           deviceType: 'MUSHROOM_CHAMBER',
           status: 'ONLINE',
           userId: '',
-          configuration: const {
+          configuration: {
             'isMock': true,
           },
           createdAt: DateTime.now(),

@@ -222,9 +222,9 @@ class LoadingButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: isOutlined ? ElevatedButton.styleFrom().copyWith(
-        backgroundColor: WidgetStateProperty.all(Colors.transparent),
-        foregroundColor: WidgetStateProperty.all(Theme.of(context).colorScheme.primary),
-        side: WidgetStateProperty.all(
+        backgroundColor: MaterialStateProperty.all(Colors.transparent),
+        foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primary),
+        side: MaterialStateProperty.all(
           BorderSide(color: Theme.of(context).colorScheme.primary),
         ),
       ) : null,

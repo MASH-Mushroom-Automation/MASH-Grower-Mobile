@@ -64,7 +64,7 @@ class ProfileScreen extends StatelessWidget {
                               ? NetworkImage(user.profileImageUrl!)
                               : null,
                           child: user.profileImageUrl == null
-                              ? const Icon(
+                              ? Icon(
                                   Icons.person,
                                   size: 40,
                                   color: Colors.white,

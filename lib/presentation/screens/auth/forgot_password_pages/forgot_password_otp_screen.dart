@@ -39,7 +39,7 @@ class _ForgotPasswordOTPScreenState extends State<ForgotPasswordOTPScreen> {
     if (otpCode.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter the complete 6-digit code'),
+          content: Text('Please enter the complete OTP code'),
           backgroundColor: Colors.red,
         ),
       );
@@ -49,9 +49,9 @@ class _ForgotPasswordOTPScreenState extends State<ForgotPasswordOTPScreen> {
     final provider = context.read<ForgotPasswordProvider>();
     provider.setOtp(otpCode);
 
-    // Navigate directly to reset password screen
-    // Verification will happen when user submits new password
-    if (mounted) {
+    final success = await provider.verifyOtp();
+    if (success && mounted) {
+      // Navigate to reset password screen
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ChangeNotifierProvider.value(

@@ -269,11 +269,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Password Requirements:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D5F4C),
+                        color: const Color(0xFF2D5F4C),
                       ),
                     ),
                     const SizedBox(height: 8),

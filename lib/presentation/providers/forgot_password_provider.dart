@@ -1,11 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../data/datasources/remote/backend_auth_remote_data_source.dart';
-import '../../core/utils/logger.dart';
 
 class ForgotPasswordProvider extends ChangeNotifier {
-  final BackendAuthRemoteDataSource _authDataSource = BackendAuthRemoteDataSource();
-  
   String _email = '';
   String _otp = '';
   String _password = '';
@@ -45,7 +41,7 @@ class ForgotPasswordProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Send OTP to email (request password reset)
+  // Send OTP to email
   Future<bool> sendOtp() async {
     if (_email.isEmpty) {
       _setError('Email is required');
@@ -54,85 +50,39 @@ class ForgotPasswordProvider extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      Logger.info('📧 Requesting password reset for: $_email');
+      // TODO: Implement actual API call to send OTP
+      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
       
-      // Call backend API to request password reset
-      final success = await _authDataSource.forgotPassword(email: _email);
+      // Start OTP timer
+      _startOtpTimer();
       
-      if (success) {
-        // Start OTP timer
-        _startOtpTimer();
-        _clearError();
-        Logger.info('✅ Password reset code sent to: $_email');
-        return true;
-      } else {
-        _setError('Failed to send reset code. Please try again.');
-        return false;
-      }
+      _clearError();
+      return true;
     } catch (e) {
-      Logger.error('❌ Failed to send reset code', e);
-      
-      String errorMessage = 'Failed to send reset code. Please try again.';
-      if (e.toString().contains('network') || e.toString().contains('connection')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      
-      _setError(errorMessage);
+      _setError('Failed to send OTP. Please try again.');
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
-  // Verify OTP and reset password
-  Future<bool> resetPassword() async {
+  // Verify OTP
+  Future<bool> verifyOtp() async {
     if (_otp.isEmpty || _otp.length != 6) {
-      _setError('Please enter a valid 6-digit code');
-      return false;
-    }
-
-    if (_password.isEmpty || _password.length < 8) {
-      _setError('Password must be at least 8 characters');
-      return false;
-    }
-
-    if (_password != _confirmPassword) {
-      _setError('Passwords do not match');
+      _setError('Please enter a valid OTP');
       return false;
     }
 
     _setLoading(true);
     try {
-      Logger.info('🔒 Resetting password for: $_email');
+      // TODO: Implement actual API call to verify OTP
+      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
       
-      // Call backend API to reset password with code
-      final success = await _authDataSource.resetPassword(
-        email: _email,
-        code: _otp,
-        newPassword: _password,
-      );
-      
-      if (success) {
-        _clearError();
-        Logger.info('✅ Password reset successful for: $_email');
-        return true;
-      } else {
-        _setError('Failed to reset password. Please try again.');
-        return false;
-      }
+      // For demo purposes, accept any 6-digit OTP
+      _clearError();
+      return true;
     } catch (e) {
-      Logger.error('❌ Password reset failed', e);
-      
-      String errorMessage = 'Failed to reset password. Please try again.';
-      if (e.toString().contains('Invalid or expired')) {
-        errorMessage = 'Invalid or expired reset code. Please request a new one.';
-      } else if (e.toString().contains('User not found')) {
-        errorMessage = 'No account found with this email.';
-      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      
-      _setError(errorMessage);
+      _setError('Invalid OTP. Please try again.');
       return false;
     } finally {
       _setLoading(false);
@@ -146,6 +96,33 @@ class ForgotPasswordProvider extends ChangeNotifier {
     }
 
     return sendOtp();
+  }
+
+  // Reset Password
+  Future<bool> resetPassword() async {
+    if (_password.isEmpty) {
+      _setError('Password is required');
+      return false;
+    }
+
+    if (_password != _confirmPassword) {
+      _setError('Passwords do not match');
+      return false;
+    }
+
+    _setLoading(true);
+    try {
+      // TODO: Implement actual API call to reset password
+      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      
+      _clearError();
+      return true;
+    } catch (e) {
+      _setError('Failed to reset password. Please try again.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   // Start OTP timer

@@ -295,7 +295,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         value: value,
         onChanged: onChanged,
         activeTrackColor: const Color(0xFF2D5F4C),
-        activeThumbColor: Colors.white,
+        activeColor: Colors.white,
       ),
     );
   }

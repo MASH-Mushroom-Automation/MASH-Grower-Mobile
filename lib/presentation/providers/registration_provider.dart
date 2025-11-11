@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/services/session_service.dart';
 import '../../core/services/secure_storage_service.dart';
@@ -8,17 +7,12 @@ import '../../core/network/dio_client.dart';
 import '../../core/network/api_client.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
-import '../../data/datasources/remote/backend_auth_remote_data_source.dart';
 import '../../data/models/auth/register_request_model.dart';
 import '../../data/models/auth/verify_email_request_model.dart';
-import '../../data/models/backend_user_model.dart';
 import '../../core/utils/logger.dart';
-import '../../core/constants/storage_keys.dart';
 
 class RegistrationProvider extends ChangeNotifier {
   late final AuthRepository _authRepository;
-  final BackendAuthRemoteDataSource _backendAuthDataSource = BackendAuthRemoteDataSource();
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   
   RegistrationProvider() {
     _initializeAuthRepository();
@@ -283,105 +277,132 @@ class RegistrationProvider extends ChangeNotifier {
   /// in a single API call (POST /api/v1/auth/register).
   /// The backend will return user data and send a 6-digit verification code to the email.
   Future<bool> submitRegistration() async {
-    // Use the new backend integration method
-    return await registerWithBackend();
-  }
-  
-  /// Verify the email with the 6-digit code sent by backend
-  /// 
-  /// This method calls POST /api/v1/auth/verify-email-code and receives JWT tokens.
-  Future<bool> verifyEmailWithCode(String code) async {
-    // Use the new backend integration method
-    return await verifyEmailCodeWithBackend(code);
-  }
-  
-  /// Resend email verification code
-  Future<bool> resendEmailVerification() async {
-    // Use the new backend integration method  
-    return await resendVerificationCodeFromBackend();
-  }
-  
-  // Complete Registration (OLD - KEEP FOR NOW FOR COMPATIBILITY)
-  Future<bool> completeRegistration() async {
     _setLoading(true);
     _clearError();
     
     try {
-      // TODO: Backend Integration - Create user account
-      // final userData = {
-      //   'email': _email,
-      //   'firstName': _firstName,
-      //   'middleName': _middleName,
-      //   'lastName': _lastName,
-      //   'contactNumber': '$_countryCode$_contactNumber',
-      //   'username': _username,
-      //   'address': {
-      //     'region': _region,
-      //     'province': _province,
-      //     'city': _city,
-      //     'barangay': _barangay,
-      //     'street': _streetAddress,
-      //   },
-      //   'password': _password,
-      // };
-      // 
-      // if (_profileImagePath != null) {
-      //   userData['profileImage'] = _profileImagePath;
-      // }
-      // 
-      // await apiService.createAccount(userData);
+      Logger.info('📝 Submitting registration for: $_email');
       
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Save session data
-      print('=== REGISTRATION DATA ===');
-      print('Email: $_email');
-      print('Prefix: $_prefix');
-      print('First Name: $_firstName');
-      print('Middle Name: $_middleName');
-      print('Last Name: $_lastName');
-      print('Suffix: $_suffix');
-      print('Contact: $_countryCode$_contactNumber');
-      print('Username: $_username');
-      print('Region: $_region');
-      print('Province: $_province');
-      print('City: $_city');
-      print('Barangay: $_barangay');
-      print('Street: $_streetAddress');
-      print('Profile Image: $_profileImagePath');
-      print('========================');
-      
-      final sessionService = SessionService();
-      await sessionService.initialize();
-      await sessionService.createSessionFromRegistration(
+      // Build the registration request
+      // Note: Backend only accepts email, password, firstName, lastName, username
+      // middleName and contactNumber are stored locally but not sent to backend
+      final registerRequest = RegisterRequestModel(
         email: _email,
-        prefix: _prefix,
+        password: _password,
         firstName: _firstName,
-        middleName: _middleName,
         lastName: _lastName,
-        suffix: _suffix,
-        contactNumber: _contactNumber,
-        countryCode: _countryCode,
         username: _username,
-        profileImagePath: _profileImagePath,
-        region: _region,
-        province: _province,
-        city: _city,
-        barangay: _barangay,
-        streetAddress: _streetAddress,
       );
       
-      print('Session saved successfully!');
+      // Call backend API
+      final response = await _authRepository.register(registerRequest);
       
-      _setLoading(false);
-      return true;
+      if (response.success) {
+        Logger.info('✅ Registration submitted successfully');
+        // Note: User is not fully registered yet - they need to verify email
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.message);
+        _setLoading(false);
+        return false;
+      }
     } catch (e) {
-      _setError('Failed to create account. Please try again.');
+      Logger.error('❌ Registration submission failed', e);
+      
+      // Extract user-friendly error message
+      String errorMessage = 'Failed to submit registration. Please try again.';
+      
+      // Check exception type and message
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('conflict') || 
+          errorString.contains('email already exists') ||
+          errorString.contains('already registered')) {
+        errorMessage = 'This email is already registered.';
+      } else if (errorString.contains('username already exists') ||
+                 errorString.contains('username is taken')) {
+        errorMessage = 'This username is already taken.';
+      } else if (errorString.contains('network') || 
+                 errorString.contains('connection')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (errorString.contains('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (e.toString().isNotEmpty && !errorString.contains('exception')) {
+        // Use the actual error message if it's user-friendly
+        errorMessage = e.toString();
+      }
+      
+      _setError(errorMessage);
       _setLoading(false);
       return false;
     }
   }
+  
+  /// Verify the email with the 6-digit code sent by backend
+  /// 
+  /// This method calls POST /api/v1/auth/verify-email and receives JWT tokens.
+  Future<bool> verifyEmailWithCode(String code) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      Logger.info('📧 Verifying email: $_email with code: $code');
+      
+      final request = VerifyEmailRequestModel(email: _email, code: code);
+      final response = await _authRepository.verifyEmail(request);
+      
+      if (response.success && response.accessToken != null) {
+        Logger.info('✅ Email verified successfully');
+        _isOtpVerified = true;
+        _stopOtpTimer();
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.message);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('❌ Email verification failed', e);
+      
+      String errorMessage = 'Failed to verify email. Please try again.';
+      if (e.toString().contains('invalid') || e.toString().contains('code')) {
+        errorMessage = 'Invalid verification code. Please try again.';
+      } else if (e.toString().contains('expired')) {
+        errorMessage = 'Verification code has expired. Please request a new one.';
+      }
+      
+      _setError(errorMessage);
+      _setLoading(false);
+      return false;
+    }
+  }
+  
+  /// Resend email verification code
+  Future<bool> resendEmailVerification() async {
+    _clearError();
+    
+    try {
+      Logger.info('📧 Resending verification code to: $_email');
+      
+      await _authRepository.resendVerification(_email);
+      
+      // Restart timer
+      _otpTimer = 60;
+      _startOtpTimer();
+      
+      return true;
+    } catch (e) {
+      Logger.error('❌ Failed to resend verification code', e);
+      _setError('Failed to resend verification code. Please try again.');
+      return false;
+    }
+  }
+  
+  // REMOVED: completeRegistration() method
+  // This method was part of the old mock authentication flow.
+  // Registration now happens through submitRegistration() which calls the backend API.
+  // If you see this comment, the method has been intentionally removed.
   
   // OTP Timer
   void _startOtpTimer() {
@@ -444,110 +465,6 @@ class RegistrationProvider extends ChangeNotifier {
     _error = null;
     _stopOtpTimer();
     notifyListeners();
-  }
-  
-  // =============================================
-  // NEW BACKEND INTEGRATION METHODS
-  // =============================================
-  
-  /// Register user with backend API (SIMPLIFIED FOR MOBILE)
-  /// This is called when user completes email + password entry
-  /// Backend sends 6-digit code to email automatically
-  Future<bool> registerWithBackend() async {
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      Logger.info('📝 Registering user with backend: $_email');
-      
-      final result = await _backendAuthDataSource.register(
-        email: _email,
-        password: _password,
-        firstName: _firstName.isNotEmpty ? _firstName : 'User',
-        lastName: _lastName.isNotEmpty ? _lastName : 'MASH',
-      );
-      
-      // Backend returns user data and sends 6-digit code
-      Logger.info('✅ Registration successful. Verification code sent to: $_email');
-      
-      // Start OTP timer
-      _startOtpTimer();
-      
-      _setLoading(false);
-      return true;
-    } catch (e) {
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
-      _setError(errorMessage);
-      Logger.error('❌ Registration failed', e);
-      _setLoading(false);
-      return false;
-    }
-  }
-  
-  /// Verify email with 6-digit code (PRIMARY METHOD FOR MOBILE)
-  /// This auto-logs in the user after successful verification
-  Future<bool> verifyEmailCodeWithBackend(String code) async {
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      Logger.info('✉️ Verifying email code for: $_email');
-      
-      final result = await _backendAuthDataSource.verifyEmailCode(
-        email: _email,
-        code: code,
-      );
-      
-      // Extract user and tokens from response
-      final token = result['token'] as String;
-      final user = result['user'] as Map<String, dynamic>;
-      
-      // Store tokens securely
-      await _secureStorage.write(key: StorageKeys.accessToken, value: token);
-      if (result['refreshToken'] != null) {
-        await _secureStorage.write(
-          key: StorageKeys.refreshToken,
-          value: result['refreshToken'] as String,
-        );
-      }
-      
-      Logger.info('✅ Email verified successfully. User auto-logged in.');
-      
-      _isOtpVerified = true;
-      _stopOtpTimer();
-      _setLoading(false);
-      return true;
-    } catch (e) {
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
-      _setError(errorMessage);
-      Logger.error('❌ Email verification failed', e);
-      _setLoading(false);
-      return false;
-    }
-  }
-  
-  /// Resend 6-digit verification code
-  Future<bool> resendVerificationCodeFromBackend() async {
-    _clearError();
-    
-    try {
-      Logger.info('🔄 Resending verification code to: $_email');
-      
-      await _backendAuthDataSource.resendVerificationCode(email: _email);
-      
-      Logger.info('✅ Verification code resent');
-      
-      // Restart timer
-      _otpTimer = 60;
-      _startOtpTimer();
-      
-      return true;
-    } catch (e) {
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
-      _setError(errorMessage);
-      Logger.error('❌ Failed to resend verification code', e);
-      return false;
-    }
   }
   
   @override
