@@ -17,6 +17,7 @@ import 'presentation/providers/device_provider.dart';
 import 'presentation/providers/notification_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/forgot_password_provider.dart';
+import 'presentation/providers/address_provider.dart';
 import 'data/datasources/local/database_helper.dart' if (dart.library.html) 'data/datasources/local/database_helper_web.dart';
 import 'core/utils/logger.dart';
 import 'presentation/screens/home/chamber_detail_screen.dart';
@@ -71,6 +72,7 @@ class MASHGrowerApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => ForgotPasswordProvider()),
+        ChangeNotifierProvider(create: (_) => AddressProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -80,7 +82,7 @@ class MASHGrowerApp extends StatelessWidget {
             theme: ThemeConfig.lightTheme,
             darkTheme: ThemeConfig.darkTheme,
             themeMode: themeProvider.themeMode,
-            home: const HomeScreen(),
+            home: const App(),
           );
         },
       ),

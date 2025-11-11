@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'dart:typed_data';
 
 import '../../../providers/registration_provider.dart';
 import '../../../widgets/registration/registration_step_indicator.dart';
@@ -28,10 +24,9 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _streetAddressController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
-  String? _selectedImagePath;
   
   // Address selections
+  Region? _selectedRegion;
   Province? _selectedProvince;
   City? _selectedCity;
   Barangay? _selectedBarangay;
@@ -44,7 +39,6 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
       final provider = context.read<RegistrationProvider>();
       _usernameController.text = provider.username;
       _streetAddressController.text = provider.streetAddress;
-      _selectedImagePath = provider.profileImagePath;
       setState(() {});
     });
   }
@@ -56,33 +50,11 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 85,
-      );
-
-      if (image != null && mounted) {
-        setState(() {
-          _selectedImagePath = image.path;
-        });
-        if (mounted) {
-          context.read<RegistrationProvider>().setProfileImagePath(image.path);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to pick image'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+  String _getAvatarUrl(String username) {
+    if (username.isEmpty) {
+      return 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=default';
     }
+    return 'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=$username';
   }
 
   void _showAddressPicker() {
@@ -127,9 +99,18 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
                     ),
                     const SizedBox(height: 24),
                     AddressSelector(
+                      selectedRegion: _selectedRegion,
                       selectedProvince: _selectedProvince,
                       selectedCity: _selectedCity,
                       selectedBarangay: _selectedBarangay,
+                      onRegionChanged: (region) {
+                        setModalState(() {
+                          _selectedRegion = region;
+                          _selectedProvince = null;
+                          _selectedCity = null;
+                          _selectedBarangay = null;
+                        });
+                      },
                       onProvinceChanged: (province) {
                         setModalState(() {
                           _selectedProvince = province;
@@ -149,51 +130,19 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
                         });
                       },
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Street / Building / House No.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade800,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: streetController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'e.g., 123 Main St, Bldg 5, Unit 3A',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                          borderSide: BorderSide(color: Color(0xFF2D5F4C), width: 2),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      ),
-                    ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _selectedProvince != null && _selectedCity != null
+                        onPressed: _selectedRegion != null
                             ? () {
                                 final provider = context.read<RegistrationProvider>();
-                                provider.setProvince(_selectedProvince!.name);
-                                provider.setCity(_selectedCity!.name);
+                                // For NCR, use region name as province
+                                final provinceName = _selectedProvince?.name ?? _selectedRegion!.name;
+                                provider.setProvince(provinceName);
+                                provider.setCity(_selectedCity?.name ?? '');
                                 provider.setBarangay(_selectedBarangay?.name ?? '');
-                                provider.setStreetAddress(streetController.text.trim());
-                                _streetAddressController.text = streetController.text.trim();
                                 setState(() {});
                                 Navigator.pop(context);
                               }
@@ -231,7 +180,6 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
     final provider = context.read<RegistrationProvider>();
     provider.setUsername(_usernameController.text.trim());
     provider.setStreetAddress(_streetAddressController.text.trim());
-    provider.setProfileImagePath(_selectedImagePath);
 
     widget.onNext();
   }
@@ -279,88 +227,57 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
 
               const SizedBox(height: 40),
 
-              // Profile Photo Upload
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.grey.shade300,
-                      ),
-                      child: _selectedImagePath != null
-                          ? ClipOval(
-                              child: kIsWeb
-                                  ? Image.network(
-                                      _selectedImagePath!,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Icon(
-                                          Icons.person,
-                                          size: 50,
-                                          color: Colors.grey.shade600,
-                                        );
-                                      },
-                                    )
-                                  : Image.file(
-                                      File(_selectedImagePath!),
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Icon(
-                                          Icons.person,
-                                          size: 50,
-                                          color: Colors.grey.shade600,
-                                        );
-                                      },
-                                    ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.grey.shade600,
-                            ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _pickImage,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xFF2D5F4C),
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // // Auto-generated Avatar Preview
+              // Center(
+              //   child: Column(
+              //     children: [
+              //       Container(
+              //         width: 100,
+              //         height: 100,
+              //         decoration: BoxDecoration(
+              //           shape: BoxShape.circle,
+              //           color: Colors.grey.shade200,
+              //           border: Border.all(
+              //             color: const Color(0xFF2D5F4C),
+              //             width: 2,
+              //           ),
+              //         ),
+              //         child: ClipOval(
+              //           child: Image.network(
+              //             _getAvatarUrl(_usernameController.text),
+              //             width: 100,
+              //             height: 100,
+              //             fit: BoxFit.cover,
+              //             loadingBuilder: (context, child, loadingProgress) {
+              //               if (loadingProgress == null) return child;
+              //               return Center(
+              //                 child: CircularProgressIndicator(
+              //                   value: loadingProgress.expectedTotalBytes != null
+              //                       ? loadingProgress.cumulativeBytesLoaded /
+              //                           loadingProgress.expectedTotalBytes!
+              //                       : null,
+              //                   strokeWidth: 2,
+              //                   valueColor: const AlwaysStoppedAnimation<Color>(
+              //                     Color(0xFF2D5F4C),
+              //                   ),
+              //                 ),
+              //               );
+              //             },
+              //             errorBuilder: (context, error, stackTrace) {
+              //               return Icon(
+              //                 Icons.person,
+              //                 size: 50,
+              //                 color: Colors.grey.shade600,
+              //               );
+              //             },
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
 
-              const SizedBox(height: 8),
-
-              Text(
-                'Upload your photo',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 32),
+              // const SizedBox(height: 32),
 
               // Username
               Text(
@@ -396,6 +313,10 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
+                onChanged: (value) {
+                  // Update avatar preview when username changes
+                  setState(() {});
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Username is required';
@@ -419,48 +340,51 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
               ),
               const SizedBox(height: 8),
 
-              // // Province, City, Barangay Selector
-              // Consumer<RegistrationProvider>(
-              //   builder: (context, provider, child) {
-              //     final hasAddress = provider.province.isNotEmpty && provider.city.isNotEmpty;
-              //     String addressText = 'Select Province, City, Barangay';
+              // Region, Province, City, Barangay Selector
+              Consumer<RegistrationProvider>(
+                builder: (context, provider, child) {
+                  final hasRegion = provider.province.isNotEmpty;
+                  String addressText = 'Select Region, Province, City, Barangay';
                   
-              //     if (hasAddress) {
-              //       addressText = '${provider.province}, ${provider.city}';
-              //       if (provider.barangay.isNotEmpty) {
-              //         addressText += ', ${provider.barangay}';
-              //       }
-              //     }
+                  if (hasRegion) {
+                    addressText = provider.province;
+                    if (provider.city.isNotEmpty) {
+                      addressText = '${provider.city}, $addressText';
+                    }
+                    if (provider.barangay.isNotEmpty) {
+                      addressText += ', ${provider.barangay}';
+                    }
+                  }
                   
-              //     return GestureDetector(
-              //       onTap: _showAddressPicker,
-              //       child: Container(
-              //         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              //         decoration: BoxDecoration(
-              //           color: Colors.white,
-              //           borderRadius: BorderRadius.circular(12),
-              //           border: Border.all(color: Colors.grey.shade300),
-              //         ),
-              //         child: Row(
-              //           children: [
-              //             Expanded(
-              //               child: Text(
-              //                 addressText,
-              //                 style: TextStyle(
-              //                   color: hasAddress ? Colors.black87 : Colors.grey.shade400,
-              //                   fontSize: 16,
-              //                 ),
-              //               ),
-              //             ),
-              //             Icon(Icons.chevron_right, color: Colors.grey.shade600),
-              //           ],
-              //         ),
-              //       ),
-              //     );
-              //   },
-              // ),
+                  return GestureDetector(
+                    onTap: _showAddressPicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              addressText,
+                              style: TextStyle(
+                                color: hasRegion ? Colors.black87 : Colors.grey.shade400,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right, color: Colors.grey.shade600),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
 
-              // const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
               // Street Address
               TextFormField(

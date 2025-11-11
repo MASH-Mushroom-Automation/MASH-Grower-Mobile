@@ -378,6 +378,24 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
   
+  /// Get address data for saving after registration
+  Map<String, String> getAddressData() {
+    return {
+      'street': _streetAddress,
+      'city': _city,
+      'state': _province,
+      'zipCode': '0000', // Default postal code for Philippines
+      'country': 'Philippines',
+    };
+  }
+  
+  /// Check if address data is complete
+  bool hasCompleteAddress() {
+    return _province.isNotEmpty && 
+           _city.isNotEmpty && 
+           _streetAddress.isNotEmpty;
+  }
+  
   /// Resend email verification code
   Future<bool> resendEmailVerification() async {
     _clearError();

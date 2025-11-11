@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:multicast_dns/multicast_dns.dart';
@@ -5,8 +6,11 @@ import '../../../core/services/websocket_device_service.dart';
 import '../../../core/services/device_connection_service.dart';
 import '../../../core/services/mock_device_service.dart';
 import '../../../core/utils/logger.dart';
+import '../../../services/bluetooth_device_service.dart';
+import '../../../services/device_connection_manager.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/device_provider.dart';
+import '../../widgets/common/bottom_nav_bar.dart';
 
 /// Hybrid device connection screen supporting:
 /// 1. WebSocket connection (via backend)
@@ -44,11 +48,17 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
   String? _selectedDeviceId;
   bool _isConnecting = false;
 
+  // Bluetooth
+  final BluetoothDeviceService _bluetoothService = BluetoothDeviceService();
+  List<BluetoothMashDevice> _bluetoothDevices = [];
+  bool _isScanningBluetooth = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _setupWebSocketCallbacks();
+    _setupBluetoothListener();
     
     // Auto-scan on load
     _scanCloudDevices();
@@ -61,6 +71,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
     _ipController.dispose();
     _portController.dispose();
     _wsService.disconnect();
+    _bluetoothService.dispose();
     super.dispose();
   }
 
@@ -89,6 +100,16 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
         );
       }
     };
+  }
+
+  void _setupBluetoothListener() {
+    _bluetoothService.devicesStream.listen((devices) {
+      if (mounted) {
+        setState(() {
+          _bluetoothDevices = devices;
+        });
+      }
+    });
   }
 
   // ============ CLOUD DEVICES (WebSocket) ============
@@ -211,7 +232,11 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
 
     try {
       Logger.info('Starting mDNS scan for local devices...');
-      final MDnsClient client = MDnsClient();
+      final MDnsClient client = MDnsClient(rawDatagramSocketFactory: (dynamic host, int port,
+          {bool? reuseAddress, bool? reusePort, int? ttl}) {
+        return RawDatagramSocket.bind(host, port,
+            reuseAddress: true, reusePort: false, ttl: ttl ?? 1);
+      });
       await client.start();
 
       // Look for _mash-iot._tcp service (matches MDNSDiscoveryService)
@@ -388,6 +413,27 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
                   'Check if device WiFi is configured correctly',
                   'Try refreshing the scan',
                   'Ensure mDNS is enabled on your router',
+                ],
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Bluetooth
+              _buildTutorialSection(
+                icon: Icons.bluetooth,
+                title: 'Bluetooth Connection',
+                color: Colors.purple,
+                tips: [
+                  'Direct device-to-device connection',
+                  'Works offline without WiFi',
+                  'Good for remote locations',
+                  'Range: ~10 meters (30 feet)',
+                ],
+                troubleshooting: [
+                  'Enable Bluetooth on both phone and device',
+                  'Grant location permissions (required for BT scan)',
+                  'Make sure device is in discoverable mode',
+                  'Move closer to device if not found',
                 ],
               ),
               
@@ -590,31 +636,48 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Connect to Chamber'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: _showTutorial,
-            tooltip: 'Tutorial & Tips',
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.cloud), text: 'Cloud'),
-            Tab(icon: Icon(Icons.wifi), text: 'Local'),
-            Tab(icon: Icon(Icons.settings_ethernet), text: 'Manual IP'),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(120),
+        child: AppBar(
+          automaticallyImplyLeading: true,
+          title: const Text('Connect to Chamber'),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              onPressed: _showTutorial,
+              tooltip: 'Tutorial & Tips',
+            ),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            tabs: const [
+              Tab(icon: Icon(Icons.cloud), text: 'Cloud'),
+              // Tab(icon: Icon(Icons.wifi), text: 'Local'),
+              Tab(icon: Icon(Icons.bluetooth), text: 'Bluetooth'),
+              Tab(icon: Icon(Icons.settings_ethernet), text: 'Manual IP'),
+            ],
+          ),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
           _buildCloudTab(),
-          _buildLocalTab(),
+          // _buildLocalTab(),
+          _buildBluetoothTab(),
           _buildManualTab(),
         ],
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pop(context);
+          }
+        },
+        isDeviceConnected: false,
       ),
     );
   }
@@ -661,45 +724,274 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
 
   // ============ LOCAL TAB ============
   
-  Widget _buildLocalTab() {
+  // Widget _buildLocalTab() {
+  //   return Column(
+  //     children: [
+  //       _buildInfoBanner(
+  //         icon: Icons.wifi,
+  //         title: 'Local Network (Auto-Discovery)',
+  //         description: 'Devices on same WiFi network',
+  //         color: Colors.blue,
+  //       ),
+        
+  //       if (_isScanningLocal)
+  //         const Expanded(
+  //           child: Center(child: CircularProgressIndicator()),
+  //         )
+  //       else if (_localDevices.isEmpty)
+  //         _buildEmptyState(
+  //           icon: Icons.wifi_off,
+  //           message: 'No local devices found',
+  //           subtitle: 'Make sure device is on same WiFi',
+  //           onRefresh: _scanLocalDevices,
+  //         )
+  //       else
+  //         Expanded(
+  //           child: ListView.builder(
+  //             padding: const EdgeInsets.all(16),
+  //             itemCount: _localDevices.length,
+  //             itemBuilder: (context, index) {
+  //               final device = _localDevices[index];
+  //               return _buildDeviceCard(
+  //                 device: device,
+  //                 onTap: () => _connectToLocalDevice(
+  //                   device['ipAddress'],
+  //                   device['port'],
+  //                 ),
+  //               );
+  //             },
+  //           ),
+  //         ),
+  //     ],
+  //   );
+  // }
+
+  // ============ BLUETOOTH TAB ============
+  
+  Future<void> _scanBluetoothDevices() async {
+    setState(() {
+      _isScanningBluetooth = true;
+      _bluetoothDevices = [];
+    });
+
+    try {
+      Logger.info('Starting Bluetooth scan...');
+      
+      // Check if Bluetooth is available
+      final available = await _bluetoothService.isBluetoothAvailable();
+      if (!available) {
+        throw Exception('Bluetooth not available. Please enable Bluetooth.');
+      }
+
+      // Start scanning
+      final started = await _bluetoothService.startScanning();
+      if (!started) {
+        throw Exception('Failed to start Bluetooth scan');
+      }
+
+      Logger.info('Bluetooth scan started');
+    } catch (e) {
+      Logger.error('Bluetooth scan failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Scan failed: $e'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      // Scanning will auto-stop after duration
+      Future.delayed(const Duration(seconds: 16), () {
+        if (mounted) {
+          setState(() => _isScanningBluetooth = false);
+        }
+      });
+    }
+  }
+
+  Future<void> _connectToBluetoothDevice(BluetoothMashDevice device) async {
+    setState(() {
+      _isConnecting = true;
+      _selectedDeviceId = device.deviceId;
+    });
+
+    try {
+      Logger.info('Connecting to Bluetooth device: ${device.name}');
+      
+      final connected = await _bluetoothService.connectToDevice(device);
+      
+      if (connected && mounted) {
+        // Save to device provider
+        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+        await deviceProvider.connectToDevice(
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          ipAddress: device.address,
+          port: 0,
+        );
+        
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connected via Bluetooth!'),
+            backgroundColor: Color(0xFF4CAF50),
+          ),
+        );
+      } else {
+        throw Exception('Failed to connect');
+      }
+    } catch (e) {
+      Logger.error('Bluetooth connection failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Connection failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isConnecting = false;
+        _selectedDeviceId = null;
+      });
+    }
+  }
+
+  Widget _buildBluetoothTab() {
     return Column(
       children: [
         _buildInfoBanner(
-          icon: Icons.wifi,
-          title: 'Local Network (Auto-Discovery)',
-          description: 'Devices on same WiFi network',
-          color: Colors.blue,
+          icon: Icons.bluetooth,
+          title: 'Bluetooth Connection',
+          description: 'Direct connection via Bluetooth',
+          color: Colors.purple,
         ),
         
-        if (_isScanningLocal)
+        if (_isScanningBluetooth)
           const Expanded(
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Scanning for Bluetooth devices...'),
+                ],
+              ),
+            ),
           )
-        else if (_localDevices.isEmpty)
+        else if (_bluetoothDevices.isEmpty)
           _buildEmptyState(
-            icon: Icons.wifi_off,
-            message: 'No local devices found',
-            subtitle: 'Make sure device is on same WiFi',
-            onRefresh: _scanLocalDevices,
+            icon: Icons.bluetooth_disabled,
+            message: 'No Bluetooth devices found',
+            subtitle: 'Make sure device Bluetooth is enabled',
+            onRefresh: _scanBluetoothDevices,
           )
         else
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _localDevices.length,
+              itemCount: _bluetoothDevices.length,
               itemBuilder: (context, index) {
-                final device = _localDevices[index];
-                return _buildDeviceCard(
+                final device = _bluetoothDevices[index];
+                return _buildBluetoothDeviceCard(
                   device: device,
-                  onTap: () => _connectToLocalDevice(
-                    device['ipAddress'],
-                    device['port'],
-                  ),
+                  onTap: () => _connectToBluetoothDevice(device),
                 );
               },
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildBluetoothDeviceCard({
+    required BluetoothMashDevice device,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = _selectedDeviceId == device.deviceId;
+    final isConnecting = _isConnecting && isSelected;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: isSelected ? 4 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? Colors.purple : Colors.grey.shade300,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: isConnecting ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.bluetooth,
+                  color: Colors.purple,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      device.name,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Address: ${device.address}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.signal_cellular_alt,
+                          size: 14,
+                          color: device.rssi > -70 ? Colors.green : Colors.orange,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Signal: ${device.rssi} dBm',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: device.rssi > -70 ? Colors.green : Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (isConnecting)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const Icon(Icons.chevron_right, color: Colors.purple),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

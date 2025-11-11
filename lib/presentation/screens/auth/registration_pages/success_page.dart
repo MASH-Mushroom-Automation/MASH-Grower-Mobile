@@ -2,10 +2,66 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/registration_provider.dart';
+import '../../../providers/address_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../auth/login_screen.dart';
+import '../../../../data/models/address/create_address_request_model.dart';
+import '../../../../core/utils/logger.dart';
 
-class SuccessPage extends StatelessWidget {
+class SuccessPage extends StatefulWidget {
   const SuccessPage({super.key});
+
+  @override
+  State<SuccessPage> createState() => _SuccessPageState();
+}
+
+class _SuccessPageState extends State<SuccessPage> {
+  bool _isSavingAddress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _saveAddressIfAvailable();
+  }
+
+  Future<void> _saveAddressIfAvailable() async {
+    final registrationProvider = context.read<RegistrationProvider>();
+    final authProvider = context.read<AuthProvider>();
+    
+    // Check if user has complete address data and is authenticated
+    if (registrationProvider.hasCompleteAddress() && authProvider.isAuthenticated) {
+      setState(() => _isSavingAddress = true);
+      
+      try {
+        final addressData = registrationProvider.getAddressData();
+        final userId = authProvider.user?.id;
+        
+        if (userId != null) {
+          Logger.info('📍 Saving address for new user: $userId');
+          
+          final addressProvider = AddressProvider();
+          final request = CreateAddressRequestModel(
+            street: addressData['street']!,
+            city: addressData['city']!,
+            state: addressData['state']!,
+            zipCode: addressData['zipCode']!,
+            country: addressData['country']!,
+            isDefault: true,
+          );
+          
+          await addressProvider.createAddress(userId, request);
+          Logger.info('✅ Address saved successfully');
+        }
+      } catch (e) {
+        Logger.error('❌ Failed to save address', e);
+        // Don't block user from continuing even if address save fails
+      } finally {
+        if (mounted) {
+          setState(() => _isSavingAddress = false);
+        }
+      }
+    }
+  }
 
   void _handleComplete(BuildContext context) {
     // Reset registration provider

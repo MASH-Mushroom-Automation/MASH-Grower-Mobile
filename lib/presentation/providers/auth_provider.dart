@@ -54,17 +54,23 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _initializeAuth() async {
     _setLoading(true);
     try {
-      // Check if user is already logged in
-      final firebaseUser = _firebaseAuth.currentUser;
-      if (firebaseUser != null) {
+      // Check if user has valid backend JWT tokens
+      final accessToken = await _secureStorage.read(key: StorageKeys.accessToken);
+      
+      if (accessToken != null && accessToken.isNotEmpty) {
+        // Try to load user from storage
         await _loadUserFromStorage();
         if (_user != null) {
           _isAuthenticated = true;
-          Logger.authLogin('Firebase (existing session)');
+          Logger.info('Restored authenticated session from stored tokens');
+        } else {
+          // Token exists but no user data, clear tokens
+          await _secureStorage.delete(key: StorageKeys.accessToken);
+          await _secureStorage.delete(key: StorageKeys.refreshToken);
+          Logger.info('Cleared invalid tokens');
         }
       } else {
-        // Session data is only for registration flow, not for auto-login
-        // User must authenticate with backend to be logged in
+        // No tokens found, user must authenticate
         Logger.info('No authenticated user found');
       }
     } catch (e) {
@@ -78,7 +84,7 @@ class AuthProvider extends ChangeNotifier {
   /// Backend API Login
   /// 
   /// Authenticates user with backend API and stores JWT tokens
-  Future<bool> loginWithBackend(String email, String password) async {
+  Future<bool> loginWithBackend(String email, String password, {bool rememberPassword = false}) async {
     _setLoading(true);
     _clearError();
 
@@ -135,6 +141,8 @@ class AuthProvider extends ChangeNotifier {
             firstName: response.user!.firstName,
             lastName: response.user!.lastName,
             profileImageUrl: response.user!.avatarUrl,
+            password: password,
+            rememberPassword: rememberPassword,
           );
         } catch (e) {
           Logger.error('Failed to save recent account: $e');
@@ -180,9 +188,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// OLD Firebase-based login (kept for backward compatibility)
-  Future<bool> signInWithEmail(String email, String password) async {
+  Future<bool> signInWithEmail(String email, String password, {bool rememberPassword = false}) async {
     // Redirect to backend login
-    return await loginWithBackend(email, password);
+    return await loginWithBackend(email, password, rememberPassword: rememberPassword);
   }
 
   /// DEPRECATED: Old mock registration method
@@ -233,35 +241,9 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      // BYPASS: Accept Google sign-in for demo purposes
-      Logger.info('🔓 BYPASS: Accepting Google sign-in for demo');
-      
-      // Create a mock user
-      _user = UserModel(
-        id: 'demo-google-user-${DateTime.now().millisecondsSinceEpoch}',
-        email: 'demo@gmail.com',
-        firstName: 'Google',
-        lastName: 'Demo User',
-        profileImageUrl: null,
-        role: 'grower',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      
-      // Store mock tokens
-      await _secureStorage.write(key: StorageKeys.accessToken, value: 'demo-google-access-token');
-      await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-google-refresh-token');
-      
-      // Save session data
-      final sessionService = SessionService();
-      await sessionService.createSessionFromLogin(
-        email: 'demo@gmail.com',
-        username: 'GoogleUser',
-      );
-      
-      _isAuthenticated = true;
-      Logger.authLogin('Demo Google Authentication');
-      return true;
+      Logger.info('Google sign-in not implemented');
+      _setError('Google Sign-In is not available. Please use email/password login.');
+      return false;
       
     } catch (e) {
       Logger.error('Google sign in failed: $e');

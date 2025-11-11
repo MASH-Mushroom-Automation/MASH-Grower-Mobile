@@ -139,7 +139,7 @@ class LocalDeviceClient {
   /// Get latest sensor data
   Future<Map<String, dynamic>> getSensorData() async {
     try {
-      final response = await _dio.get('/sensors/latest');
+      final response = await _dio.get('/api/sensor/current');
       return response.data as Map<String, dynamic>;
     } catch (e) {
       Logger.error('Failed to get sensor data: $e');
