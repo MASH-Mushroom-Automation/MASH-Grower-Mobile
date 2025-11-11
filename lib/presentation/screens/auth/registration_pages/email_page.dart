@@ -39,18 +39,8 @@ class _EmailPageState extends State<EmailPage> {
     final normalizedEmail = Validators.normalizeEmail(_emailController.text);
     provider.setEmail(normalizedEmail);
 
-    // Send OTP
-    final success = await provider.sendOtp();
-    if (success && mounted) {
-      widget.onNext();
-    } else if (mounted && provider.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error!),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    // Just set the email and move to next page (password setup)
+    widget.onNext();
   }
 
   Future<void> _handleGoogleSignUp() async {
