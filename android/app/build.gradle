@@ -2,6 +2,8 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    // google services plugin for firebase
+    id "com.google.gms.google-services"
 }
 
 def localProperties = new Properties()
@@ -23,7 +25,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.mash.grower.mobile"
+    namespace "com.example.mash_grower_mobile"
     compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
@@ -41,7 +43,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.mash.grower.mobile"
+        applicationId "com.example.mash_grower_mobile"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
@@ -60,7 +62,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix ".debug"
+            // Removed applicationIdSuffix to match google-services.json package name
             versionNameSuffix "-debug"
             debuggable true
             minifyEnabled false
@@ -71,7 +73,8 @@ android {
             debuggable false
             minifyEnabled false
             shrinkResources false
-            // Use default signing for now
+            // Use debug signing for testing/sharing (replace with proper keystore for production)
+            signingConfig signingConfigs.debug
             
             // Optimize for size and performance
             // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
