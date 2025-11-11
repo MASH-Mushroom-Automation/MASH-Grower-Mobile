@@ -11,7 +11,9 @@ class ApiEndpoints {
   // Registration & Email Verification
   static const String authRegister = '/auth/register';
   static const String authVerifyEmail = '/auth/verify-email';
+  static const String authVerifyEmailCode = '/auth/verify-email-code'; // 6-digit code verification (MOBILE)
   static const String authResendVerification = '/auth/resend-verification';
+  static const String authResendVerificationCode = '/auth/resend-verification-code'; // 6-digit code resend (MOBILE)
   
   // Login & Logout
   static const String authLogin = '/auth/login';
@@ -19,6 +21,7 @@ class ApiEndpoints {
   
   // Token Management
   static const String authRefresh = '/auth/refresh';
+  static const String authRefreshToken = '/auth/refresh-token'; // Full refresh endpoint
   static const String authVerify = '/auth/verify';
   
   // User Information
