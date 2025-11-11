@@ -395,10 +395,11 @@ class _SettingsItem {
   final Widget? trailing;
   final VoidCallback? onTap;
 
-  _SettingsItem({
+  const _SettingsItem({
     required this.icon,
     required this.title,
     this.subtitle,
+    this.trailing,
     this.onTap,
   });
 }

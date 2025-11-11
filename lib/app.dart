@@ -92,13 +92,7 @@ class _AppState extends State<App> {
 
         // Show registration screen after onboarding completion
         if (_showRegistrationAfterOnboarding && !authProvider.isAuthenticated) {
-          return RegistrationFlowScreen(
-            onNavigateToLogin: () {
-              setState(() {
-                _showRegistrationAfterOnboarding = false;
-              });
-            },
-          );
+          return const RegistrationFlowScreen();
         }
 
         // Show login screen if not authenticated
