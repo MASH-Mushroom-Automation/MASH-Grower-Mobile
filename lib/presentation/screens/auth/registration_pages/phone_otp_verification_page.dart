@@ -96,7 +96,7 @@ class _PhoneOtpVerificationPageState extends State<PhoneOtpVerificationPage> {
             const SizedBox(height: 20),
 
             // Step Indicator
-            RegistrationStepIndicatorWithLabels(
+            const RegistrationStepIndicatorWithLabels(
               currentStep: 2,
               stepLabels: ['Verify Email', 'Profile', 'Phone Verify', 'Account', 'Password'],
             ),

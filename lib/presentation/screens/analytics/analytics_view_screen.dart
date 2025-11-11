@@ -15,7 +15,7 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
   String _selectedDevice = 'All Devices';
   // Set to empty list to test no device state
   final List<String> _devices = ['All Devices', 'Chamber 1', 'Chamber 2'];
-  bool _hasDevices = true; // Change to false to show empty state
+  final bool _hasDevices = true; // Change to false to show empty state
   
   // Mock data based on period - Mushroom Growing Focused
   Map<String, dynamic> get _currentData {
@@ -763,7 +763,7 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.check_circle, color: Colors.green, size: 24),
+                                const Icon(Icons.check_circle, color: Colors.green, size: 24),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Optimal',
@@ -895,7 +895,7 @@ class _AnalyticsViewScreenState extends State<AnalyticsViewScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.trending_up, color: Colors.blue, size: 24),
+                          const Icon(Icons.trending_up, color: Colors.blue, size: 24),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(

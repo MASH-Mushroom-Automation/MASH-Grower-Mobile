@@ -30,7 +30,7 @@ class RegistrationStepIndicator extends StatelessWidget {
     final isCurrent = index == currentStep;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    final primaryColor = const Color(0xFF2D5F4C); // Dark green from design
+    const primaryColor = Color(0xFF2D5F4C); // Dark green from design
     final completedColor = primaryColor;
     final currentColor = primaryColor;
     final inactiveColor = Colors.grey.shade300;
@@ -107,7 +107,7 @@ class RegistrationStepIndicatorWithLabels extends StatelessWidget {
                   final stepIndex = index ~/ 2;
                   final isCompleted = stepIndex < currentStep;
                   final isCurrent = stepIndex == currentStep;
-                  final primaryColor = const Color(0xFF2D5F4C);
+                  const primaryColor = Color(0xFF2D5F4C);
                   final inactiveColor = Colors.grey.shade300;
                   
                   return Container(
@@ -134,7 +134,7 @@ class RegistrationStepIndicatorWithLabels extends StatelessWidget {
                   // Line
                   final stepIndex = index ~/ 2;
                   final isCompleted = stepIndex < currentStep;
-                  final primaryColor = const Color(0xFF2D5F4C);
+                  const primaryColor = Color(0xFF2D5F4C);
                   final inactiveColor = Colors.grey.shade300;
                   
                   return Expanded(

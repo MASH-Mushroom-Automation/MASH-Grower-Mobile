@@ -127,8 +127,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Container(
                       width: 120,
                       height: 120,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2D5F4C),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2D5F4C),
                         shape: BoxShape.circle,
                       ),
                       child: user.profileImageUrl != null

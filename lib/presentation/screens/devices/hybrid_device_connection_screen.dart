@@ -922,7 +922,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
+                        const Text(
                           'ONLINE',
                           style: TextStyle(
                             fontSize: 12,

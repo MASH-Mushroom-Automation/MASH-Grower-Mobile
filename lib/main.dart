@@ -19,10 +19,6 @@ import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/forgot_password_provider.dart';
 import 'data/datasources/local/database_helper.dart' if (dart.library.html) 'data/datasources/local/database_helper_web.dart';
 import 'core/utils/logger.dart';
-import 'presentation/screens/home/chamber_detail_screen.dart';
-import 'presentation/screens/home/home_screen.dart';
-import 'presentation/screens/home/user_settings_screen.dart';
-import 'presentation/screens/auth/registration_flow_screen.dart';
 
 // Background message handler
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -34,7 +30,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Set environment (change this for production builds)
-  EnvironmentConfig.setEnvironment(Environment.production); // Using Railway: https://mash-backend-api-production.up.railway.app
+  EnvironmentConfig.setEnvironment(Environment.production); // Using live backend: https://mash-backend.onrender.com
   
   // Initialize Firebase
   await Firebase.initializeApp(

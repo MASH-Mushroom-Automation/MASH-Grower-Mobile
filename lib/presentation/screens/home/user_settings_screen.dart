@@ -399,7 +399,6 @@ class _SettingsItem {
     required this.icon,
     required this.title,
     this.subtitle,
-    this.trailing,
     this.onTap,
   });
 }

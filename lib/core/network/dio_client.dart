@@ -71,16 +71,10 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    try {
-      // Add auth token to requests
-      final token = await _secureStorage.read(key: StorageKeys.accessToken);
-      if (token != null) {
-        options.headers['Authorization'] = 'Bearer $token';
-      }
-    } catch (e) {
-      // Ignore secure storage errors (common on web during initial load)
-      Logger.error('⚠️ Failed to read token from secure storage: $e');
-      print('⚠️ Failed to read token from secure storage: $e');
+    // Add auth token to requests
+    final token = await _secureStorage.read(key: StorageKeys.accessToken);
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer $token';
     }
     
     Logger.networkRequest(

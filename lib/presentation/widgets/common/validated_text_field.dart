@@ -83,8 +83,8 @@ class _ValidatedTextFieldState extends State<ValidatedTextField> {
         controller: widget.controller,
         focusNode: widget.focusNode,
         decoration: InputDecoration(
-          hintText: widget.label,
-          floatingLabelBehavior: FloatingLabelBehavior.never, //label floating disabled 
+          labelText: widget.label,
+          hintText: widget.hintText,
           prefixIcon: widget.prefixIcon,
           suffixIcon: widget.suffixIcon,
           border: OutlineInputBorder(

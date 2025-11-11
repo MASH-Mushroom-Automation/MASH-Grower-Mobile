@@ -15,7 +15,7 @@ class SensorProvider extends ChangeNotifier {
 
   List<SensorReadingModel> _latestReadings = [];
   List<SensorReadingModel> _historicalData = [];
-  Map<String, List<SensorReadingModel>> _deviceData = {};
+  final Map<String, List<SensorReadingModel>> _deviceData = {};
   bool _isLoading = false;
   String? _error;
   String? _selectedDeviceId;
@@ -302,8 +302,4 @@ class SensorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }

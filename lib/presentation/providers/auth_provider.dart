@@ -8,7 +8,6 @@ import '../../core/constants/storage_keys.dart';
 import '../../core/utils/logger.dart';
 import '../../core/services/session_service.dart';
 import '../../core/services/secure_storage_service.dart';
-import '../../core/services/recent_accounts_service.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/validators.dart';
@@ -63,9 +62,33 @@ class AuthProvider extends ChangeNotifier {
           Logger.authLogin('Firebase (existing session)');
         }
       } else {
-        // Session data is only for registration flow, not for auto-login
-        // User must authenticate with backend to be logged in
-        Logger.info('No authenticated user found');
+        // Check if we have session data from registration
+        final sessionService = SessionService();
+        await sessionService.initialize();
+        final sessionData = await sessionService.getRegistrationData();
+        
+        if (sessionData != null) {
+          Logger.info('🔍 Auth Init - Found session data: $sessionData');
+          
+          // Create user from session data
+          _user = UserModel(
+            id: 'session-user-${DateTime.now().millisecondsSinceEpoch}',
+            email: sessionData['email'] ?? 'user@example.com',
+            firstName: sessionData['firstName'] ?? 'User',
+            lastName: sessionData['lastName'] ?? 'Name',
+            profileImageUrl: sessionData['profileImagePath'],
+            role: 'grower',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          
+          // Store mock tokens
+          await _secureStorage.write(key: StorageKeys.accessToken, value: 'session-access-token');
+          await _secureStorage.write(key: StorageKeys.refreshToken, value: 'session-refresh-token');
+          
+          _isAuthenticated = true;
+          Logger.authLogin('Session Data (auto-login)');
+        }
       }
     } catch (e) {
       Logger.error('Auth initialization failed: $e');
@@ -86,8 +109,7 @@ class AuthProvider extends ChangeNotifier {
       // Normalize email to lowercase
       final normalizedEmail = Validators.normalizeEmail(email);
 
-      Logger.info('Backend Login attempt for: $normalizedEmail');
-      print('Backend Login attempt for: $normalizedEmail'); // Console print
+      Logger.info('🔓 Backend Login attempt for: $normalizedEmail');
 
       // Create login request
       final loginRequest = LoginRequestModel(
@@ -95,17 +117,8 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      Logger.info('Calling auth repository login...');
-      print('Calling auth repository login...'); // Console print
-      
       // Call backend API
       final response = await _authRepository.login(loginRequest);
-
-      Logger.info('Got response from auth repository');
-      print('Got response from auth repository'); // Console print
-      print('Response success: ${response.success}');
-      print('Response user: ${response.user}');
-      print('Response message: ${response.message}');
 
       if (response.success && response.user != null) {
         // Store backend user data
@@ -126,28 +139,8 @@ class AuthProvider extends ChangeNotifier {
         // JWT tokens are already stored by AuthRepository
         _isAuthenticated = true;
         
-        // Save to recent accounts for quick sign-in
-        try {
-          final recentAccountsService = RecentAccountsService();
-          await recentAccountsService.initialize();
-          await recentAccountsService.addRecentAccount(
-            email: response.user!.email,
-            firstName: response.user!.firstName,
-            lastName: response.user!.lastName,
-            profileImageUrl: response.user!.avatarUrl,
-          );
-        } catch (e) {
-          Logger.error('Failed to save recent account: $e');
-        }
-        
         Logger.authLogin('Backend API Login - $normalizedEmail');
         Logger.info('✅ User logged in: ${response.user!.displayName}');
-        
-        // Set loading to false before notifying listeners
-        _isLoading = false;
-        
-        // Notify listeners to update UI immediately
-        notifyListeners();
         
         return true;
       } else {
@@ -155,10 +148,8 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-    } catch (e, stackTrace) {
+    } catch (e) {
       Logger.error('❌ Backend login failed', e);
-      print('❌ ERROR in loginWithBackend: $e');
-      print('Stack trace: $stackTrace');
       
       // Extract user-friendly error message
       String errorMessage = 'Login failed. Please check your credentials.';
@@ -172,10 +163,10 @@ class AuthProvider extends ChangeNotifier {
         errorMessage = 'Network error. Please check your connection.';
       }
       
-      print('Setting error message: $errorMessage');
       _setError(errorMessage);
-      _isLoading = false;
       return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -185,9 +176,6 @@ class AuthProvider extends ChangeNotifier {
     return await loginWithBackend(email, password);
   }
 
-  /// DEPRECATED: Old mock registration method
-  /// This method is no longer used. Registration now goes through RegistrationProvider.submitRegistration()
-  /// which calls the backend API directly.
   Future<bool> signUpWithEmail(String email, String password, String firstName, String lastName) async {
     _setLoading(true);
     _clearError();
@@ -196,10 +184,37 @@ class AuthProvider extends ChangeNotifier {
       // Normalize email to lowercase
       final normalizedEmail = Validators.normalizeEmail(email);
 
-      Logger.info('Mock registration (deprecated) for: $normalizedEmail');
-      Logger.warning('This method should not be used. Use RegistrationProvider.submitRegistration() instead.');
+      // Check if email is already registered
+      final sessionService = SessionService();
+      await sessionService.initialize();
 
-      // Create user with provided data (mock only)
+      final isAlreadyRegistered = await sessionService.isEmailRegistered(normalizedEmail);
+      if (isAlreadyRegistered) {
+        _setError('Email already registered. Please login instead.');
+        return false;
+      }
+
+      Logger.info('🔓 Registration attempt for new email: $normalizedEmail');
+
+      // Save registration data
+      await sessionService.createSessionFromRegistration(
+        email: normalizedEmail,
+        prefix: '',
+        firstName: firstName,
+        middleName: '',
+        lastName: lastName,
+        suffix: '',
+        contactNumber: '',
+        countryCode: '+63',
+        username: normalizedEmail.split('@')[0],
+        region: '',
+        province: '',
+        city: '',
+        barangay: '',
+        streetAddress: '',
+      );
+
+      // Create user with provided data
       _user = UserModel(
         id: 'user-$normalizedEmail',
         email: normalizedEmail,
@@ -216,7 +231,7 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.write(key: StorageKeys.refreshToken, value: 'demo-refresh-token');
 
       _isAuthenticated = true;
-      Logger.authLogin('Mock Registration (Deprecated) - $normalizedEmail');
+      Logger.authLogin('New User Registration - $normalizedEmail');
       return true;
 
     } catch (e) {
@@ -338,16 +353,10 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     _setLoading(true);
     try {
-      Logger.info('Logging out user...');
+      Logger.info('🚪 Logging out user...');
       
-      // Try to call backend logout API (may fail due to CORS on web)
-      try {
-        await _authRepository.logout();
-      } catch (e) {
-        Logger.error('Backend logout failed (continuing with local cleanup): $e');
-        print('Backend logout failed (continuing with local cleanup): $e');
-        // Continue with local cleanup even if backend call fails
-      }
+      // Call backend logout API
+      await _authRepository.logout();
       
       // Sign out from Firebase (if still using it)
       try {
@@ -356,29 +365,17 @@ class AuthProvider extends ChangeNotifier {
         Logger.error('Firebase signOut failed (non-critical)', e);
       }
       
-      // Clear stored tokens
-      try {
-        await _secureStorage.delete(key: StorageKeys.accessToken);
-        await _secureStorage.delete(key: StorageKeys.refreshToken);
-        await _secureStorage.delete(key: StorageKeys.userData);
-      } catch (e) {
-        Logger.error('Failed to clear secure storage: $e');
-      }
+      // Clear stored tokens (done by AuthRepository, but double-check)
+      await _secureStorage.delete(key: StorageKeys.accessToken);
+      await _secureStorage.delete(key: StorageKeys.refreshToken);
+      await _secureStorage.delete(key: StorageKeys.userData);
       
       // Clear session data
-      try {
-        final sessionService = SessionService();
-        await sessionService.clearSession();
-      } catch (e) {
-        Logger.error('Failed to clear session: $e');
-      }
+      final sessionService = SessionService();
+      await sessionService.clearSession();
       
       // Clear local data
-      try {
-        await _authLocalDataSource.clearUserData();
-      } catch (e) {
-        Logger.error('Failed to clear local data: $e');
-      }
+      await _authLocalDataSource.clearUserData();
       
       // Clear state
       _user = null;
@@ -387,14 +384,10 @@ class AuthProvider extends ChangeNotifier {
       _clearError();
       
       Logger.authLogout();
-      Logger.info('User logged out successfully');
+      Logger.info('✅ User logged out successfully');
     } catch (e) {
-      Logger.error('Logout failed', e);
-      // Don't set error - we still want to clear the user state
-      _user = null;
-      _backendUser = null;
-      _isAuthenticated = false;
-      _clearError();
+      Logger.error('❌ Logout failed', e);
+      _setError('Failed to sign out');
     } finally {
       _setLoading(false);
     }

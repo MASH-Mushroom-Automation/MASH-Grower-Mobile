@@ -247,7 +247,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.white,

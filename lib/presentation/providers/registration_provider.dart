@@ -284,14 +284,16 @@ class RegistrationProvider extends ChangeNotifier {
       Logger.info('📝 Submitting registration for: $_email');
       
       // Build the registration request
-      // Note: Backend only accepts email, password, firstName, lastName, username
-      // middleName and contactNumber are stored locally but not sent to backend
       final registerRequest = RegisterRequestModel(
         email: _email,
         password: _password,
         firstName: _firstName,
         lastName: _lastName,
         username: _username,
+        middleName: _middleName.isNotEmpty ? _middleName : null,
+        contactNumber: _contactNumber.isNotEmpty 
+            ? '$_countryCode$_contactNumber' 
+            : null,
       );
       
       // Call backend API
@@ -312,24 +314,12 @@ class RegistrationProvider extends ChangeNotifier {
       
       // Extract user-friendly error message
       String errorMessage = 'Failed to submit registration. Please try again.';
-      
-      // Check exception type and message
-      final errorString = e.toString().toLowerCase();
-      if (errorString.contains('conflict') || 
-          errorString.contains('email already exists') ||
-          errorString.contains('already registered')) {
+      if (e.toString().contains('email already exists')) {
         errorMessage = 'This email is already registered.';
-      } else if (errorString.contains('username already exists') ||
-                 errorString.contains('username is taken')) {
+      } else if (e.toString().contains('username already exists')) {
         errorMessage = 'This username is already taken.';
-      } else if (errorString.contains('network') || 
-                 errorString.contains('connection')) {
+      } else if (e.toString().contains('network')) {
         errorMessage = 'Network error. Please check your connection.';
-      } else if (errorString.contains('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (e.toString().isNotEmpty && !errorString.contains('exception')) {
-        // Use the actual error message if it's user-friendly
-        errorMessage = e.toString();
       }
       
       _setError(errorMessage);
@@ -399,10 +389,87 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
   
-  // REMOVED: completeRegistration() method
-  // This method was part of the old mock authentication flow.
-  // Registration now happens through submitRegistration() which calls the backend API.
-  // If you see this comment, the method has been intentionally removed.
+  // Complete Registration (OLD - KEEP FOR NOW FOR COMPATIBILITY)
+  Future<bool> completeRegistration() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      // TODO: Backend Integration - Create user account
+      // final userData = {
+      //   'email': _email,
+      //   'firstName': _firstName,
+      //   'middleName': _middleName,
+      //   'lastName': _lastName,
+      //   'contactNumber': '$_countryCode$_contactNumber',
+      //   'username': _username,
+      //   'address': {
+      //     'region': _region,
+      //     'province': _province,
+      //     'city': _city,
+      //     'barangay': _barangay,
+      //     'street': _streetAddress,
+      //   },
+      //   'password': _password,
+      // };
+      // 
+      // if (_profileImagePath != null) {
+      //   userData['profileImage'] = _profileImagePath;
+      // }
+      // 
+      // await apiService.createAccount(userData);
+      
+      // Simulate API call
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Save session data
+      print('=== REGISTRATION DATA ===');
+      print('Email: $_email');
+      print('Prefix: $_prefix');
+      print('First Name: $_firstName');
+      print('Middle Name: $_middleName');
+      print('Last Name: $_lastName');
+      print('Suffix: $_suffix');
+      print('Contact: $_countryCode$_contactNumber');
+      print('Username: $_username');
+      print('Region: $_region');
+      print('Province: $_province');
+      print('City: $_city');
+      print('Barangay: $_barangay');
+      print('Street: $_streetAddress');
+      print('Profile Image: $_profileImagePath');
+      print('========================');
+      
+      final sessionService = SessionService();
+      await sessionService.initialize();
+      await sessionService.createSessionFromRegistration(
+        email: _email,
+        prefix: _prefix,
+        firstName: _firstName,
+        middleName: _middleName,
+        lastName: _lastName,
+        suffix: _suffix,
+        contactNumber: _contactNumber,
+        countryCode: _countryCode,
+        username: _username,
+        profileImagePath: _profileImagePath,
+        region: _region,
+        province: _province,
+        city: _city,
+        barangay: _barangay,
+        streetAddress: _streetAddress,
+      );
+      
+      print('Session saved successfully!');
+      
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError('Failed to create account. Please try again.');
+      _setLoading(false);
+      return false;
+    }
+  }
   
   // OTP Timer
   void _startOtpTimer() {

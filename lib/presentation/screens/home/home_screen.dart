@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentNavIndex = 0;
   
   // Mock data - replace with actual data from backend
-  bool _isConnecting = false;
+  final bool _isConnecting = false;
   bool _isDeviceOn = true; // Device power state
 
   void _handleConnect() async {
@@ -595,11 +595,11 @@ class _HomeScreenState extends State<HomeScreen> {
         color: const Color(0xFFF3FBF3), // very light green background
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE6F4EA)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: const Color.fromRGBO(0, 0, 0, 0.03),
+            color: Color.fromRGBO(0, 0, 0, 0.03),
             blurRadius: 6,
-            offset: const Offset(0, 1),
+            offset: Offset(0, 1),
           ),
         ],
       ),
@@ -610,8 +610,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F5E8),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: const Color(0xFF2D5F4C), size: 20),

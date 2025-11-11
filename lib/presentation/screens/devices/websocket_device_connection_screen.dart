@@ -149,7 +149,7 @@ class _WebSocketDeviceConnectionScreenState extends State<WebSocketDeviceConnect
 
     try {
       // TODO: Get JWT token from secure storage
-      final token = 'your-jwt-token'; // Replace with actual token
+      const token = 'your-jwt-token'; // Replace with actual token
       
       final connected = await _wsService.connect(
         wsUrl: _wsServerUrl,

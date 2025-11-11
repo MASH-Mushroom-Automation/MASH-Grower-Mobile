@@ -80,9 +80,7 @@ class DeviceModel extends Equatable {
       'device_type': deviceType,
       'status': status,
       'last_seen': lastSeen?.millisecondsSinceEpoch,
-      'configuration': configuration != null 
-          ? configuration.toString() 
-          : null,
+      'configuration': configuration?.toString(),
       'created_at': createdAt?.millisecondsSinceEpoch,
     };
   }

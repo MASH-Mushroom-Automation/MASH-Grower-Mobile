@@ -113,7 +113,7 @@ class DeviceListScreen extends StatelessWidget {
                     backgroundColor: device.isOnline 
                         ? Colors.green 
                         : Colors.grey,
-                    child: Icon(
+                    child: const Icon(
                       Icons.device_hub,
                       color: Colors.white,
                     ),
