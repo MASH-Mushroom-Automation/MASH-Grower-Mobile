@@ -1,7 +1,10 @@
 # MASH Grower Mobile - AI Coding Guidelines
 
 ## Project Overview
-Flutter mobile app for mushroom growers with offline-first architecture, real-time IoT monitoring, and Firebase integration. Clean Architecture with Provider state management.
+Flutter mobile app for mushroom growers with **offline-first architecture**, real-time IoT monitoring, and **dual backend integration** (Railway REST API + Firebase). Clean Architecture with Provider state management.
+
+**Backend:** Railway production API at `https://mash-backend-api-production.up.railway.app/api/v1`  
+**Branch:** `Build-apk` (feature/api-backend-connections merged)
 
 ## Architecture Patterns
 
@@ -11,50 +14,95 @@ Flutter mobile app for mushroom growers with offline-first architecture, real-ti
 - **Consumer Widgets**: Use `Consumer<ProviderType>` for reactive UI updates
 - **Provider Access**: `Provider.of<ProviderType>(context, listen: false)` for non-reactive access
 
-**Example Provider Structure:**
+**Critical Pattern - Always wrap async operations:**
 ```dart
-class AuthProvider extends ChangeNotifier {
-  UserModel? _user;
-  bool _isLoading = false;
-
-  UserModel? get user => _user;
-  bool get isLoading => _isLoading;
-
-  Future<void> login(String email, String password) async {
-    _isLoading = true;
+Future<void> fetchData() async {
+  _isLoading = true;
+  notifyListeners();
+  try {
+    final data = await _dataSource.getData();
+    _items = data;
+    _error = null;
+  } catch (e) {
+    _error = e.toString().replaceAll('Exception: ', '');
+    Logger.error('Failed to fetch data', e);
+  } finally {
+    _isLoading = false;
     notifyListeners();
-    try {
-      // auth logic
-      _user = userModel;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
   }
 }
 ```
 
 ### Data Layer Architecture
 - **Models**: Extend `Equatable` in `data/models/`, implement `fromJson()` and `toJson()`
-- **Remote DataSources**: Dio-based classes in `data/datasources/remote/`
+- **Remote DataSources**: Railway backend via `BackendAuthRemoteDataSource` in `data/datasources/remote/`
 - **Local DataSources**: SQLite-based classes in `data/datasources/local/`
-- **Repository Pattern**: Combine remote/local sources (not fully implemented yet)
+- **API Response Wrapper**: All backend responses use `ApiResponse<T>` with success, statusCode, data, timestamp
 
 **Example Model:**
 ```dart
-class UserModel extends Equatable {
-  const UserModel({required this.id, required this.email});
+class BackendUserModel extends Equatable {
+  final String id;
+  final String email;
+  final String firstName;
+  final String lastName;
+  final bool emailVerified;
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    id: json['id'],
-    email: json['email'],
+  factory BackendUserModel.fromJson(Map<String, dynamic> json) => BackendUserModel(
+    id: json['id'] as String,
+    email: json['email'] as String,
+    firstName: json['firstName'] as String,
+    lastName: json['lastName'] as String,
+    emailVerified: json['emailVerified'] as bool? ?? false,
   );
 
-  Map<String, dynamic> toJson() => {'id': id, 'email': email};
-
   @override
-  List<Object?> get props => [id, email];
+  List<Object?> get props => [id, email, firstName, lastName, emailVerified];
 }
+```
+
+### Backend Integration (Railway REST API)
+- **Base URL**: `ApiEndpoints.prodBaseUrl` = Railway production (via `core/constants/api_endpoints.dart`)
+- **Authentication Flow**: 6-digit email verification codes (10-min expiry) → JWT tokens (1-hour access, 7-day refresh)
+- **Data Source Pattern**: `BackendAuthRemoteDataSource` handles all auth API calls (register, verify, login, forgot password)
+- **Token Storage**: `FlutterSecureStorage` for encrypted JWT storage (`access_token`, `refresh_token` keys)
+- **Auto-Refresh**: `DioClient` interceptor catches 401 errors → calls `/auth/refresh` → retries original request
+
+**Critical: Backend API Response Structure**
+```dart
+// All backend responses follow this pattern:
+{
+  "success": true,
+  "statusCode": 200,
+  "data": { /* actual data */ },
+  "timestamp": "2025-11-12T10:30:00.000Z",
+  "path": "/api/v1/auth/login",
+  "correlationId": "uuid-here"
+}
+```
+
+### Authentication Flows (IMPORTANT)
+
+**Registration Flow (7-page wizard):**
+```
+1. Email page → collect email only
+2. Password page → collect password
+3. Profile page → firstName, lastName, username
+4. Account page → optional address info
+5. Review page → submitRegistration() → POST /auth/register → 6-digit code sent
+6. OTP page → verifyEmailWithCode() → POST /auth/verify-email-code → JWT tokens → auto-login
+7. Success page
+```
+
+**Login Flow:**
+```
+signInWithEmail() → loginWithBackendDirect() → POST /auth/login → JWT tokens stored
+```
+
+**Forgot Password Flow:**
+```
+sendOtp() → POST /auth/forgot-password → 6-digit code sent
+resetPassword() → POST /auth/reset-password → password updated
 ```
 
 ### Networking Patterns
@@ -65,11 +113,28 @@ class UserModel extends Equatable {
 
 **Example API Call:**
 ```dart
-final response = await _dio.post(
-  ApiEndpoints.authExchange,
-  data: {'firebase_token': token},
+final response = await _dioClient.dio.post(
+  ApiEndpoints.authLogin,
+  data: {'email': email, 'password': password},
 );
-return response.data['data'];
+
+final apiResponse = ApiResponse.fromJson(response.data, (data) => data);
+if (apiResponse.success) {
+  return apiResponse.data as Map<String, dynamic>;
+}
+throw Exception(apiResponse.message ?? 'Request failed');
+```
+
+**Error Handling Pattern:**
+```dart
+on DioException catch (e) {
+  if (e.response?.statusCode == 400) {
+    throw Exception(e.response?.data['message'] ?? 'Bad request');
+  } else if (e.response?.statusCode == 429) {
+    throw Exception('Too many attempts. Please try again later.');
+  }
+  throw Exception('Network error. Please check your connection.');
+}
 ```
 
 ## Configuration & Environment
@@ -98,7 +163,7 @@ EnvironmentConfig.setEnvironment(Environment.development);
 - **Database**: Real-time sensor data synchronization
 
 ### Local Storage
-- **Secure Storage**: `FlutterSecureStorage` for tokens
+- **Secure Storage**: `FlutterSecureStorage` for tokens (JWT access/refresh)
 - **SQLite**: `sqflite` for offline data (database helper pattern)
 - **Shared Preferences**: Simple key-value storage
 
