@@ -8,8 +8,13 @@ import '../../auth/login_screen.dart';
 import '../../../../data/models/address/create_address_request_model.dart';
 import '../../../../core/utils/logger.dart';
 
-class SuccessPage extends StatefulWidget {
-  const SuccessPage({super.key});
+class SuccessPage extends StatelessWidget {
+  final VoidCallback? onNavigateToLogin;
+  
+  const SuccessPage({
+    super.key,
+    this.onNavigateToLogin,
+  });
 
   @override
   State<SuccessPage> createState() => _SuccessPageState();
@@ -67,11 +72,15 @@ class _SuccessPageState extends State<SuccessPage> {
     // Reset registration provider
     context.read<RegistrationProvider>().reset();
     
-    // Navigate to login screen
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    // Navigate to login screen using callback or default navigation
+    if (onNavigateToLogin != null) {
+      onNavigateToLogin!();
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override

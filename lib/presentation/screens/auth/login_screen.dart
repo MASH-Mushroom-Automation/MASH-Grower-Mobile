@@ -3,14 +3,18 @@ import 'package:provider/provider.dart';
 
 import '../../../core/utils/validators.dart';
 import '../../widgets/common/validated_text_field.dart';
-import '../../widgets/auth/recent_accounts_widget.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
 import 'registration_flow_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final VoidCallback? onNavigateToRegistration;
+  
+  const LoginScreen({
+    super.key,
+    this.onNavigateToRegistration,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -44,9 +48,11 @@ class _LoginScreenState extends State<LoginScreen> {
       rememberPassword: _rememberPassword,
     );
 
-    // No need to navigate manually - app.dart will handle navigation
-    // automatically when authProvider.isAuthenticated changes
-    if (!success && mounted && authProvider.error != null) {
+    if (success && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else if (mounted && authProvider.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.error!),
@@ -134,60 +140,59 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 40),
                 
-                // Recent Accounts Widget
-                RecentAccountsWidget(
-                  onAccountSelected: (email) {
-                    setState(() {
-                      _emailController.text = email;
-                    });
-                    // Focus on password field
-                    FocusScope.of(context).nextFocus();
-                  },
+                // Email Label
+                Text(
+                  'Email',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade800,
+                      ),
                 ),
+                const SizedBox(height: 8),
                 
                 // Email Input
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    return ValidatedTextField(
-                      key: const Key('login_email_field'),
-                      controller: _emailController,
-                      label: 'Email',
-                      hintText: '',
-                      keyboardType: TextInputType.emailAddress,
-                      validator: Validators.validateEmail,
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      enabled: !authProvider.isLoading,
-                    );
-                  },
+                ValidatedTextField(
+                  key: const Key('login_email_field'),
+                  controller: _emailController,
+                  label: 'Email',
+                  hintText: 'Enter email',
+                  keyboardType: TextInputType.emailAddress,
+                  validator: Validators.validateEmail,
+                  prefixIcon: const Icon(Icons.email_outlined),
                 ),
                 
                 const SizedBox(height: 20),
                 
-                // Password Input
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    return ValidatedTextField(
-                      key: const Key('login_password_field'),
-                      controller: _passwordController,
-                      label: 'Password',
-                      hintText: '',
-                      obscureText: _obscurePassword,
-                      validator: Validators.validatePassword,
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      enabled: !authProvider.isLoading,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          color: const Color(0xFF2D5F4C),
-                        ),
-                        onPressed: authProvider.isLoading ? null : () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                // Password Label
+                Text(
+                  'Password',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade800,
                       ),
-                    );
-                  },
+                ),
+                const SizedBox(height: 8),
+                
+                // Password Input
+                ValidatedTextField(
+                  key: const Key('login_password_field'),
+                  controller: _passwordController,
+                  label: 'Password',
+                  hintText: 'Enter Password',
+                  obscureText: _obscurePassword,
+                  validator: Validators.validatePassword,
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: const Color(0xFF2D5F4C),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
                 
                 const SizedBox(height: 8),
@@ -269,95 +274,97 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // // Divider
-                // Row(
-                //   children: [
-                //     Expanded(child: Divider(color: Colors.grey.shade300)),
-                //     Padding(
-                //       padding: const EdgeInsets.symmetric(horizontal: 16),
-                //       child: Text(
-                //         'or',
-                //         style: TextStyle(color: Colors.grey.shade600),
-                //       ),
-                //     ),
-                //     Expanded(child: Divider(color: Colors.grey.shade300)),
-                //   ],
-                // ),
+                // Divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'or',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
                 
-                // const SizedBox(height: 24),
+                const SizedBox(height: 24),
                 
                 // Google Login
-                // OutlinedButton.icon(
-                //   onPressed: _handleGoogleLogin,
-                //   style: OutlinedButton.styleFrom(
-                //     minimumSize: const Size(double.infinity, 56),
-                //     side: BorderSide(color: Colors.grey.shade300),
-                //     shape: RoundedRectangleBorder(
-                //       borderRadius: BorderRadius.circular(12),
-                //     ),
-                //     backgroundColor: Colors.white,
-                //   ),
-                //   icon: Image.asset(
-                //     'icons/google.png',
-                //     height: 24,
-                //     width: 24
-                //   ),
-                //   label: const Text(
-                //     'Login with Google',
-                //     style: TextStyle(
-                //       fontSize: 16,
-                //       color: Colors.black87,
-                //     ),
-                //   ),
-                // ),
+                OutlinedButton.icon(
+                  onPressed: _handleGoogleLogin,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.white,
+                  ),
+                  icon: Image.asset(
+                    'icons/google.png',
+                    height: 24,
+                    width: 24
+                  ),
+                  label: const Text(
+                    'Login with Google',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
                 
-                // const SizedBox(height: 16),
+                const SizedBox(height: 16),
                 
-                // // Facebook Login
-                // OutlinedButton.icon(
-                //   onPressed: _handleFacebookLogin,
-                //   style: OutlinedButton.styleFrom(
-                //     minimumSize: const Size(double.infinity, 56),
-                //     side: BorderSide(color: Colors.grey.shade300),
-                //     shape: RoundedRectangleBorder(
-                //       borderRadius: BorderRadius.circular(12),
-                //     ),
-                //     backgroundColor: Colors.white,
-                //   ),
-                //   icon: Image.asset(
-                //     'icons/facebook.png',
-                //     height: 24,
-                //     width: 24,
-                //     errorBuilder: (context, error, stackTrace) {
-                //       return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
-                //     },
-                //   ),
-                //   label: const Text(
-                //     'Login with Facebook',
-                //     style: TextStyle(
-                //       fontSize: 16,
-                //       color: Colors.black87,
-                //     ),
-                //   ),
-                // ),
+                // Facebook Login
+                OutlinedButton.icon(
+                  onPressed: _handleFacebookLogin,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.white,
+                  ),
+                  icon: Image.asset(
+                    'icons/facebook.png',
+                    height: 24,
+                    width: 24,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
+                    },
+                  ),
+                  label: const Text(
+                    'Login with Facebook',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
                 
-                // const SizedBox(height: 32),
+                const SizedBox(height: 32),
                 
                 // Sign Up Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Flexible(
-                      child: Text(
-                        "Don't have an account? ",
-                        style: TextStyle(color: Colors.grey.shade700),
-                      ),
+                    Text(
+                      "Don't have an account? ",
+                      style: TextStyle(color: Colors.grey.shade700),
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const RegistrationFlowScreen()),
-                        );
+                        if (widget.onNavigateToRegistration != null) {
+                          widget.onNavigateToRegistration!();
+                        } else {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const RegistrationFlowScreen()),
+                          );
+                        }
                       },
                       child: const Text(
                         'Sign up',

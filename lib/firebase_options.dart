@@ -41,46 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'your-web-api-key',
-    appId: 'your-web-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'mash-grower-app',
-    authDomain: 'mash-grower-app.firebaseapp.com',
-    storageBucket: 'mash-grower-app.appspot.com',
+    apiKey: 'AIzaSyCv_crn26Vy32Awi95qu08twfx99PkaQAM',
+    appId: '1:542530489821:web:45e60f3692aae868f4ba34',
+    messagingSenderId: '542530489821',
+    projectId: 'mashappbuild-a7068',
+    authDomain: 'mashappbuild-a7068.firebaseapp.com',
+    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
+    measurementId: 'G-XP60TMMYJH',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'your-android-api-key',
-    appId: 'your-android-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'mash-grower-app',
-    storageBucket: 'mash-grower-app.appspot.com',
+    apiKey: 'AIzaSyAurHVXuhSuHpR93ncJQcKxSlYvWO-hpJA',
+    appId: '1:542530489821:android:eb2212c619130837f4ba34',
+    messagingSenderId: '542530489821',
+    projectId: 'mashappbuild-a7068',
+    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'your-ios-api-key',
-    appId: 'your-ios-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'mash-grower-app',
-    storageBucket: 'mash-grower-app.appspot.com',
-    iosBundleId: 'com.mash.grower',
+    apiKey: 'AIzaSyCuoaBFKm_tsmxLrcIRBaSFplty6ud1qOo',
+    appId: '1:542530489821:ios:96b576ee636b3627f4ba34',
+    messagingSenderId: '542530489821',
+    projectId: 'mashappbuild-a7068',
+    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
+    iosBundleId: 'com.example.mashGrowerMobile',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'your-macos-api-key',
-    appId: 'your-macos-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'mash-grower-app',
-    storageBucket: 'mash-grower-app.appspot.com',
-    iosBundleId: 'com.mash.grower',
+    apiKey: 'AIzaSyCuoaBFKm_tsmxLrcIRBaSFplty6ud1qOo',
+    appId: '1:542530489821:ios:96b576ee636b3627f4ba34',
+    messagingSenderId: '542530489821',
+    projectId: 'mashappbuild-a7068',
+    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
+    iosBundleId: 'com.example.mashGrowerMobile',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'your-windows-api-key',
-    appId: 'your-windows-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'mash-grower-app',
-    authDomain: 'mash-grower-app.firebaseapp.com',
-    storageBucket: 'mash-grower-app.appspot.com',
+    apiKey: 'AIzaSyCv_crn26Vy32Awi95qu08twfx99PkaQAM',
+    appId: '1:542530489821:web:15ef157b8232d78bf4ba34',
+    messagingSenderId: '542530489821',
+    projectId: 'mashappbuild-a7068',
+    authDomain: 'mashappbuild-a7068.firebaseapp.com',
+    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
+    measurementId: 'G-PQ9CFPJH7M',
   );
+
 }
