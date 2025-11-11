@@ -283,116 +283,22 @@ class RegistrationProvider extends ChangeNotifier {
   /// in a single API call (POST /api/v1/auth/register).
   /// The backend will return user data and send a 6-digit verification code to the email.
   Future<bool> submitRegistration() async {
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      Logger.info('📝 Submitting registration for: $_email');
-      
-      // Build the registration request
-      final registerRequest = RegisterRequestModel(
-        email: _email,
-        password: _password,
-        firstName: _firstName,
-        lastName: _lastName,
-        username: _username,
-        middleName: _middleName.isNotEmpty ? _middleName : null,
-        contactNumber: _contactNumber.isNotEmpty 
-            ? '$_countryCode$_contactNumber' 
-            : null,
-      );
-      
-      // Call backend API
-      final response = await _authRepository.register(registerRequest);
-      
-      if (response.success) {
-        Logger.info('✅ Registration submitted successfully');
-        // Note: User is not fully registered yet - they need to verify email
-        _setLoading(false);
-        return true;
-      } else {
-        _setError(response.message);
-        _setLoading(false);
-        return false;
-      }
-    } catch (e) {
-      Logger.error('❌ Registration submission failed', e);
-      
-      // Extract user-friendly error message
-      String errorMessage = 'Failed to submit registration. Please try again.';
-      if (e.toString().contains('email already exists')) {
-        errorMessage = 'This email is already registered.';
-      } else if (e.toString().contains('username already exists')) {
-        errorMessage = 'This username is already taken.';
-      } else if (e.toString().contains('network')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      
-      _setError(errorMessage);
-      _setLoading(false);
-      return false;
-    }
+    // Use the new backend integration method
+    return await registerWithBackend();
   }
   
   /// Verify the email with the 6-digit code sent by backend
   /// 
-  /// This method calls POST /api/v1/auth/verify-email and receives JWT tokens.
+  /// This method calls POST /api/v1/auth/verify-email-code and receives JWT tokens.
   Future<bool> verifyEmailWithCode(String code) async {
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      Logger.info('📧 Verifying email: $_email with code: $code');
-      
-      final request = VerifyEmailRequestModel(email: _email, code: code);
-      final response = await _authRepository.verifyEmail(request);
-      
-      if (response.success && response.accessToken != null) {
-        Logger.info('✅ Email verified successfully');
-        _isOtpVerified = true;
-        _stopOtpTimer();
-        _setLoading(false);
-        return true;
-      } else {
-        _setError(response.message);
-        _setLoading(false);
-        return false;
-      }
-    } catch (e) {
-      Logger.error('❌ Email verification failed', e);
-      
-      String errorMessage = 'Failed to verify email. Please try again.';
-      if (e.toString().contains('invalid') || e.toString().contains('code')) {
-        errorMessage = 'Invalid verification code. Please try again.';
-      } else if (e.toString().contains('expired')) {
-        errorMessage = 'Verification code has expired. Please request a new one.';
-      }
-      
-      _setError(errorMessage);
-      _setLoading(false);
-      return false;
-    }
+    // Use the new backend integration method
+    return await verifyEmailCodeWithBackend(code);
   }
   
   /// Resend email verification code
   Future<bool> resendEmailVerification() async {
-    _clearError();
-    
-    try {
-      Logger.info('📧 Resending verification code to: $_email');
-      
-      await _authRepository.resendVerification(_email);
-      
-      // Restart timer
-      _otpTimer = 60;
-      _startOtpTimer();
-      
-      return true;
-    } catch (e) {
-      Logger.error('❌ Failed to resend verification code', e);
-      _setError('Failed to resend verification code. Please try again.');
-      return false;
-    }
+    // Use the new backend integration method  
+    return await resendVerificationCodeFromBackend();
   }
   
   // Complete Registration (OLD - KEEP FOR NOW FOR COMPATIBILITY)
