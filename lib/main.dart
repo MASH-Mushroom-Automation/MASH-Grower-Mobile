@@ -80,7 +80,7 @@ class MASHGrowerApp extends StatelessWidget {
             theme: ThemeConfig.lightTheme,
             darkTheme: ThemeConfig.darkTheme,
             themeMode: themeProvider.themeMode,
-            home: const HomeScreen(),
+            home: const App(),
           );
         },
       ),
