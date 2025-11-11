@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/services/session_service.dart';
 import '../../core/services/secure_storage_service.dart';
@@ -7,12 +8,17 @@ import '../../core/network/dio_client.dart';
 import '../../core/network/api_client.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
+import '../../data/datasources/remote/backend_auth_remote_data_source.dart';
 import '../../data/models/auth/register_request_model.dart';
 import '../../data/models/auth/verify_email_request_model.dart';
+import '../../data/models/backend_user_model.dart';
 import '../../core/utils/logger.dart';
+import '../../core/constants/storage_keys.dart';
 
 class RegistrationProvider extends ChangeNotifier {
   late final AuthRepository _authRepository;
+  final BackendAuthRemoteDataSource _backendAuthDataSource = BackendAuthRemoteDataSource();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   
   RegistrationProvider() {
     _initializeAuthRepository();
@@ -532,6 +538,110 @@ class RegistrationProvider extends ChangeNotifier {
     _error = null;
     _stopOtpTimer();
     notifyListeners();
+  }
+  
+  // =============================================
+  // NEW BACKEND INTEGRATION METHODS
+  // =============================================
+  
+  /// Register user with backend API (SIMPLIFIED FOR MOBILE)
+  /// This is called when user completes email + password entry
+  /// Backend sends 6-digit code to email automatically
+  Future<bool> registerWithBackend() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      Logger.info('📝 Registering user with backend: $_email');
+      
+      final result = await _backendAuthDataSource.register(
+        email: _email,
+        password: _password,
+        firstName: _firstName.isNotEmpty ? _firstName : 'User',
+        lastName: _lastName.isNotEmpty ? _lastName : 'MASH',
+      );
+      
+      // Backend returns user data and sends 6-digit code
+      Logger.info('✅ Registration successful. Verification code sent to: $_email');
+      
+      // Start OTP timer
+      _startOtpTimer();
+      
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      _setError(errorMessage);
+      Logger.error('❌ Registration failed', e);
+      _setLoading(false);
+      return false;
+    }
+  }
+  
+  /// Verify email with 6-digit code (PRIMARY METHOD FOR MOBILE)
+  /// This auto-logs in the user after successful verification
+  Future<bool> verifyEmailCodeWithBackend(String code) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      Logger.info('✉️ Verifying email code for: $_email');
+      
+      final result = await _backendAuthDataSource.verifyEmailCode(
+        email: _email,
+        code: code,
+      );
+      
+      // Extract user and tokens from response
+      final token = result['token'] as String;
+      final user = result['user'] as Map<String, dynamic>;
+      
+      // Store tokens securely
+      await _secureStorage.write(key: StorageKeys.accessToken, value: token);
+      if (result['refreshToken'] != null) {
+        await _secureStorage.write(
+          key: StorageKeys.refreshToken,
+          value: result['refreshToken'] as String,
+        );
+      }
+      
+      Logger.info('✅ Email verified successfully. User auto-logged in.');
+      
+      _isOtpVerified = true;
+      _stopOtpTimer();
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      _setError(errorMessage);
+      Logger.error('❌ Email verification failed', e);
+      _setLoading(false);
+      return false;
+    }
+  }
+  
+  /// Resend 6-digit verification code
+  Future<bool> resendVerificationCodeFromBackend() async {
+    _clearError();
+    
+    try {
+      Logger.info('🔄 Resending verification code to: $_email');
+      
+      await _backendAuthDataSource.resendVerificationCode(email: _email);
+      
+      Logger.info('✅ Verification code resent');
+      
+      // Restart timer
+      _otpTimer = 60;
+      _startOtpTimer();
+      
+      return true;
+    } catch (e) {
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      _setError(errorMessage);
+      Logger.error('❌ Failed to resend verification code', e);
+      return false;
+    }
   }
   
   @override

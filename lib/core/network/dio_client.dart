@@ -77,6 +77,11 @@ class _AuthInterceptor extends Interceptor {
       options.headers['Authorization'] = 'Bearer $token';
     }
     
+    // Add correlation ID for request tracking
+    final correlationId = DateTime.now().millisecondsSinceEpoch.toString();
+    options.headers['X-Request-ID'] = correlationId;
+    options.headers['X-Correlation-ID'] = correlationId;
+    
     Logger.networkRequest(
       options.method,
       '${options.baseUrl}${options.path}',
@@ -115,22 +120,46 @@ class _AuthInterceptor extends Interceptor {
   Future<bool> _refreshToken() async {
     try {
       final refreshToken = await _secureStorage.read(key: StorageKeys.refreshToken);
-      if (refreshToken == null) return false;
+      if (refreshToken == null) {
+        Logger.error('No refresh token available');
+        return false;
+      }
 
-      final response = await DioClient.instance.dio.post(
+      Logger.info('🔄 Attempting to refresh access token...');
+      
+      // Use a fresh Dio instance to avoid interceptor loops
+      final freshDio = Dio(BaseOptions(
+        baseUrl: ApiConfig.apiBaseUrl,
+        headers: {'Content-Type': 'application/json'},
+      ));
+
+      final response = await freshDio.post(
         ApiEndpoints.authRefresh,
-        data: {'refresh_token': refreshToken},
+        data: {'refreshToken': refreshToken},
       );
 
       if (response.statusCode == 200) {
+        // Extract token from backend response structure
         final data = response.data['data'];
-        await _secureStorage.write(key: StorageKeys.accessToken, value: data['access_token']);
-        await _secureStorage.write(key: StorageKeys.refreshToken, value: data['refresh_token']);
-        Logger.authTokenRefresh();
-        return true;
+        final newAccessToken = data['accessToken'] ?? data['token'];
+        final newRefreshToken = data['refreshToken'];
+        
+        if (newAccessToken != null) {
+          await _secureStorage.write(key: StorageKeys.accessToken, value: newAccessToken);
+          
+          if (newRefreshToken != null) {
+            await _secureStorage.write(key: StorageKeys.refreshToken, value: newRefreshToken);
+          }
+          
+          Logger.info('✅ Access token refreshed successfully');
+          return true;
+        }
       }
     } catch (e) {
-      Logger.error('Token refresh failed: $e');
+      Logger.error('❌ Token refresh failed', e);
+      // Clear tokens on refresh failure
+      await _secureStorage.delete(key: StorageKeys.accessToken);
+      await _secureStorage.delete(key: StorageKeys.refreshToken);
     }
     return false;
   }

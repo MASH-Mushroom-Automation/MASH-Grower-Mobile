@@ -12,17 +12,18 @@ import '../../core/network/dio_client.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/validators.dart';
 import '../../data/models/user_model.dart';
-import '../../data/models/auth/backend_user_model.dart';
-import '../../data/models/auth/login_request_model.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
+import '../../data/datasources/remote/backend_auth_remote_data_source.dart';
 import '../../data/datasources/local/auth_local_datasource.dart';
+import '../../data/models/backend_user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final LocalAuthentication _localAuth = LocalAuthentication();
   final AuthLocalDataSource _authLocalDataSource = AuthLocalDataSource();
+  final BackendAuthRemoteDataSource _backendAuthDataSource = BackendAuthRemoteDataSource();
   
   late final AuthRepository _authRepository;
   BackendUserModel? _backendUser;
@@ -98,76 +99,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Backend API Login
+  /// Backend API Login (redirects to direct method)
   /// 
   /// Authenticates user with backend API and stores JWT tokens
   Future<bool> loginWithBackend(String email, String password) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      // Normalize email to lowercase
-      final normalizedEmail = Validators.normalizeEmail(email);
-
-      Logger.info('🔓 Backend Login attempt for: $normalizedEmail');
-
-      // Create login request
-      final loginRequest = LoginRequestModel(
-        email: normalizedEmail,
-        password: password,
-      );
-
-      // Call backend API
-      final response = await _authRepository.login(loginRequest);
-
-      if (response.success && response.user != null) {
-        // Store backend user data
-        _backendUser = response.user;
-        
-        // Create user model from backend user
-        _user = UserModel(
-          id: response.user!.id,
-          email: response.user!.email,
-          firstName: response.user!.firstName,
-          lastName: response.user!.lastName,
-          profileImageUrl: response.user!.avatarUrl,
-          role: 'grower',
-          createdAt: response.user!.createdAt,
-          updatedAt: response.user!.updatedAt,
-        );
-
-        // JWT tokens are already stored by AuthRepository
-        _isAuthenticated = true;
-        
-        Logger.authLogin('Backend API Login - $normalizedEmail');
-        Logger.info('✅ User logged in: ${response.user!.displayName}');
-        
-        return true;
-      } else {
-        _setError(response.message);
-        return false;
-      }
-
-    } catch (e) {
-      Logger.error('❌ Backend login failed', e);
-      
-      // Extract user-friendly error message
-      String errorMessage = 'Login failed. Please check your credentials.';
-      if (e.toString().contains('invalid credentials')) {
-        errorMessage = 'Invalid email or password.';
-      } else if (e.toString().contains('email not verified')) {
-        errorMessage = 'Please verify your email before logging in.';
-      } else if (e.toString().contains('account locked')) {
-        errorMessage = 'Your account has been locked. Please contact support.';
-      } else if (e.toString().contains('network')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      
-      _setError(errorMessage);
-      return false;
-    } finally {
-      _setLoading(false);
-    }
+    // Use the new direct backend method instead
+    return await loginWithBackendDirect(email, password);
   }
 
   /// OLD Firebase-based login (kept for backward compatibility)
@@ -459,6 +396,195 @@ class AuthProvider extends ChangeNotifier {
   //     await signOut();
   //   }
   // }
+
+  // ==================== NEW BACKEND DIRECT METHODS ====================
+  
+  /// Direct backend login (bypasses old repository pattern)
+  Future<bool> loginWithBackendDirect(String email, String password) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.info('🔐 Direct backend login attempt: $email');
+      
+      // Call backend API directly - returns Map<String, dynamic>
+      final response = await _backendAuthDataSource.login(
+        email: email,
+        password: password,
+      );
+      
+      // Parse response data
+      final user = BackendUserModel.fromJson(response['user']);
+      final accessToken = response['tokens']['accessToken'] as String;
+      final refreshToken = response['tokens']['refreshToken'] as String;
+      
+      // Store JWT tokens in secure storage
+      await _secureStorage.write(
+        key: StorageKeys.accessToken,
+        value: accessToken,
+      );
+      await _secureStorage.write(
+        key: StorageKeys.refreshToken,
+        value: refreshToken,
+      );
+      
+      // Store backend user
+      _backendUser = user;
+      
+      // Convert to UserModel for backward compatibility
+      _user = UserModel(
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.avatarUrl,
+        role: user.role,
+        createdAt: DateTime.parse(user.createdAt),
+        updatedAt: user.updatedAt != null ? DateTime.parse(user.updatedAt!) : null,
+      );
+      
+      // Save user locally
+      await _authLocalDataSource.saveUser(_user!);
+      
+      _isAuthenticated = true;
+      Logger.info('✅ Direct backend login successful: ${user.displayName}');
+      return true;
+
+    } catch (e) {
+      Logger.error('❌ Direct backend login failed', e);
+      
+      // Extract user-friendly error message
+      String errorMessage = 'Login failed. Please check your credentials.';
+      if (e.toString().contains('invalid credentials') || e.toString().contains('Invalid email or password')) {
+        errorMessage = 'Invalid email or password.';
+      } else if (e.toString().contains('email not verified') || e.toString().contains('Email not verified')) {
+        errorMessage = 'Please verify your email before logging in.';
+      } else if (e.toString().contains('account locked')) {
+        errorMessage = 'Your account has been locked. Please contact support.';
+      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      _setError(errorMessage);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Request password reset code (sends 6-digit code to email)
+  Future<bool> forgotPasswordWithBackend(String email) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.info('📧 Requesting password reset for: $email');
+      
+      // Returns bool (always true for security)
+      final success = await _backendAuthDataSource.forgotPassword(email: email);
+      
+      if (success) {
+        Logger.info('✅ Password reset code sent to: $email');
+        return true;
+      } else {
+        _setError('Failed to send reset code. Please try again.');
+        return false;
+      }
+
+    } catch (e) {
+      Logger.error('❌ Forgot password failed', e);
+      
+      String errorMessage = 'Failed to send reset code. Please try again.';
+      if (e.toString().contains('User not found')) {
+        errorMessage = 'No account found with this email.';
+      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      _setError(errorMessage);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Reset password with verification code
+  Future<bool> resetPasswordWithBackend(String email, String code, String newPassword) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.info('🔒 Resetting password for: $email');
+      
+      // Returns bool
+      final success = await _backendAuthDataSource.resetPassword(
+        email: email,
+        code: code,
+        newPassword: newPassword,
+      );
+      
+      if (success) {
+        Logger.info('✅ Password reset successful for: $email');
+        return true;
+      } else {
+        _setError('Failed to reset password. Please try again.');
+        return false;
+      }
+
+    } catch (e) {
+      Logger.error('❌ Password reset failed', e);
+      
+      String errorMessage = 'Failed to reset password. Please try again.';
+      if (e.toString().contains('Invalid or expired')) {
+        errorMessage = 'Invalid or expired reset code. Please request a new one.';
+      } else if (e.toString().contains('User not found')) {
+        errorMessage = 'No account found with this email.';
+      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      _setError(errorMessage);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get current user profile from backend
+  Future<BackendUserModel?> getCurrentUserFromBackend() async {
+    try {
+      Logger.info('👤 Fetching current user from backend');
+      
+      // Returns BackendUserModel?
+      final user = await _backendAuthDataSource.getCurrentUser();
+      
+      _backendUser = user;
+      
+      // Update local UserModel
+      _user = UserModel(
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.avatarUrl,
+        role: user.role,
+        createdAt: DateTime.parse(user.createdAt),
+        updatedAt: user.updatedAt != null ? DateTime.parse(user.updatedAt!) : null,
+      );
+      
+      await _authLocalDataSource.saveUser(_user!);
+      notifyListeners();
+      
+      Logger.info('✅ User profile updated: ${user.displayName}');
+      
+      return user;
+    } catch (e) {
+      Logger.error('❌ Failed to get current user', e);
+      return null;
+    }
+  }
+
+  // ==================== HELPER METHODS ====================
 
   void _setLoading(bool loading) {
     _isLoading = loading;
