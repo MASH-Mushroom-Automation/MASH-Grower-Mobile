@@ -1,0 +1,71 @@
+[
+  {
+    "id": "cmhq5o0c7000eqi01e73g3j72",
+    "clerkId": "user_35C03kTgzh7cSjtlz9yMxa6OhVj",
+    "email": "k@gmail.com",
+    "username": "byemmecaquin",
+    "firstName": "Kevin",
+    "lastName": "Llanes",
+    "imageUrl": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=byemmecaquin",
+    "phoneNumber": "+639171234567",
+    "role": "USER",
+    "isActive": true,
+    "lastLoginAt": "2025-11-10T14:30:00.000Z",
+    "createdAt": "2025-11-08T10:42:28.663Z",
+    "updatedAt": "2025-11-10T15:00:00.000Z",
+    "preferences": {
+      "theme": "light",
+      "notifications": true,
+      "language": "en"
+    },
+    "twoFactorBackupCodes": [],
+    "twoFactorEnabled": false,
+    "twoFactorSecret": null,
+    "password": "$2b$10$RzauWb6UQLmd/L7.6J3HJO4gzotZHg4.767/0o.I6z6qPrZB8LCRu",
+    "emailVerified": true,
+    "emailVerificationToken": null,
+    "emailVerificationExpiry": null,
+    "addresses": [
+      {
+        "id": "addr_123",
+        "userId": "cmhq5o0c7000eqi01e73g3j72",
+        "type": "home",
+        "firstName": "Kevin",
+        "lastName": "Llanes",
+        "company": null,
+        "street1": "123 Main St, Bldg 5, Unit 3A",
+        "street2": null,
+        "city": "Quezon City",
+        "state": "Metro Manila",
+        "postalCode": "1121",
+        "country": "Philippines",
+        "phoneNumber": "+639171234567",
+        "isDefault": true,
+        "createdAt": "2025-11-08T10:42:28.663Z",
+        "updatedAt": "2025-11-08T10:42:28.663Z"
+      }
+    ],
+    "sessions": [
+      {
+        "id": "session_123",
+        "userId": "cmhq5o0c7000eqi01e73g3j72",
+        "clerkSessionId": null,
+        "token": "jwt_token_here",
+        "status": "ACTIVE",
+        "deviceInfo": {
+          "deviceModel": "iPhone 14 Pro",
+          "osVersion": "iOS 17.0",
+          "appVersion": "1.0.0"
+        },
+        "ipAddress": "192.168.1.1",
+        "userAgent": "MASH-Mobile/1.0.0",
+        "lastActivity": "2025-11-10T14:30:00.000Z",
+        "expiresAt": "2025-11-17T14:30:00.000Z",
+        "revokedAt": null,
+        "revokedReason": null,
+        "createdAt": "2025-11-10T10:00:00.000Z",
+        "updatedAt": "2025-11-10T14:30:00.000Z"
+      }
+    ]
+  }
+]

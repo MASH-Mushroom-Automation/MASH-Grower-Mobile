@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 
 /// Service to manage recently logged-in accounts for quick sign-in
@@ -9,9 +10,11 @@ class RecentAccountsService {
   RecentAccountsService._internal();
 
   SharedPreferences? _prefs;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   
   static const String _recentAccountsKey = 'recent_accounts';
   static const int _maxRecentAccounts = 3; // Maximum 3 recent accounts
+  static const String _passwordPrefix = 'saved_password_'; // Prefix for saved passwords
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
@@ -40,11 +43,24 @@ class RecentAccountsService {
     required String firstName,
     required String lastName,
     String? profileImageUrl,
+    String? password,
+    bool rememberPassword = false,
   }) async {
     final accounts = await getRecentAccounts();
     
     // Remove if already exists
     accounts.removeWhere((account) => account.email == email);
+    
+    // Save password securely if rememberPassword is true
+    if (rememberPassword && password != null) {
+      await _secureStorage.write(
+        key: '$_passwordPrefix$email',
+        value: password,
+      );
+    } else {
+      // Clear saved password if not remembering
+      await _secureStorage.delete(key: '$_passwordPrefix$email');
+    }
     
     // Add to front
     accounts.insert(0, RecentAccount(
@@ -53,6 +69,7 @@ class RecentAccountsService {
       lastName: lastName,
       profileImageUrl: profileImageUrl,
       lastLoginAt: DateTime.now(),
+      hasPasswordSaved: rememberPassword,
     ));
     
     // Keep only max accounts
@@ -70,13 +87,32 @@ class RecentAccountsService {
     final accounts = await getRecentAccounts();
     accounts.removeWhere((account) => account.email == email);
     
+    // Also remove saved password
+    await _secureStorage.delete(key: '$_passwordPrefix$email');
+    
     final accountsJson = jsonEncode(accounts.map((a) => a.toJson()).toList());
     await _prefs?.setString(_recentAccountsKey, accountsJson);
   }
 
   /// Clear all recent accounts
   Future<void> clearRecentAccounts() async {
+    // Get all accounts to clear their passwords
+    final accounts = await getRecentAccounts();
+    for (final account in accounts) {
+      await _secureStorage.delete(key: '$_passwordPrefix${account.email}');
+    }
+    
     await _prefs?.remove(_recentAccountsKey);
+  }
+  
+  /// Get saved password for an account
+  Future<String?> getSavedPassword(String email) async {
+    try {
+      return await _secureStorage.read(key: '$_passwordPrefix$email');
+    } catch (e) {
+      print('Error reading saved password: $e');
+      return null;
+    }
   }
 }
 
@@ -87,6 +123,7 @@ class RecentAccount {
   final String lastName;
   final String? profileImageUrl;
   final DateTime lastLoginAt;
+  final bool hasPasswordSaved;
 
   RecentAccount({
     required this.email,
@@ -94,6 +131,7 @@ class RecentAccount {
     required this.lastName,
     this.profileImageUrl,
     required this.lastLoginAt,
+    this.hasPasswordSaved = false,
   });
 
   String get displayName => '$firstName $lastName';
@@ -111,6 +149,7 @@ class RecentAccount {
       lastName: json['lastName'] as String,
       profileImageUrl: json['profileImageUrl'] as String?,
       lastLoginAt: DateTime.parse(json['lastLoginAt'] as String),
+      hasPasswordSaved: json['hasPasswordSaved'] as bool? ?? false,
     );
   }
 
@@ -121,6 +160,7 @@ class RecentAccount {
       'lastName': lastName,
       'profileImageUrl': profileImageUrl,
       'lastLoginAt': lastLoginAt.toIso8601String(),
+      'hasPasswordSaved': hasPasswordSaved,
     };
   }
 }

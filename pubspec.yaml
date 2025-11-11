@@ -25,6 +25,8 @@ dependencies:
   web_socket_channel: ^3.0.1
   connectivity_plus: ^6.0.5
   multicast_dns: ^0.3.2+6
+  flutter_blue_plus: ^1.32.11
+  permission_handler: ^11.3.1
   
   # Firebase
   firebase_messaging: ^15.1.3

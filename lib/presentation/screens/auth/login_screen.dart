@@ -25,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberPassword = false;
 
   @override
   void dispose() {
@@ -44,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.signInWithEmail(
       normalizedEmail,
       _passwordController.text,
+      rememberPassword: _rememberPassword,
     );
 
     if (success && mounted) {
@@ -193,26 +195,45 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 
-                // Forgot Password Link
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                      );
-                    },
-                    child: const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: Color(0xFF2D5F4C),
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
+                // Remember Password Checkbox
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberPassword,
+                      onChanged: (value) {
+                        setState(() {
+                          _rememberPassword = value ?? false;
+                        });
+                      },
+                      activeColor: const Color(0xFF2D5F4C),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Remember Password',
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                  ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                        );
+                      },
+                      child: const Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: Color(0xFF2D5F4C),
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 
                 const SizedBox(height: 24),

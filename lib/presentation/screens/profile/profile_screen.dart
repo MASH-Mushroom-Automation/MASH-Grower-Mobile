@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../../core/services/session_service.dart';
+import '../address/address_list_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -187,6 +188,20 @@ class ProfileScreen extends StatelessWidget {
                           // TODO: Edit profile
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Edit profile not implemented yet')),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.location_on_outlined),
+                        title: const Text('My Addresses'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AddressListScreen(),
+                            ),
                           );
                         },
                       ),

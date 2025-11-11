@@ -3,18 +3,22 @@ import '../../../core/models/psgc_models.dart';
 import '../../../core/services/psgc_service.dart';
 
 class AddressSelector extends StatefulWidget {
+  final Region? selectedRegion;
   final Province? selectedProvince;
   final City? selectedCity;
   final Barangay? selectedBarangay;
+  final Function(Region?) onRegionChanged;
   final Function(Province?) onProvinceChanged;
   final Function(City?) onCityChanged;
   final Function(Barangay?) onBarangayChanged;
 
   const AddressSelector({
     super.key,
+    this.selectedRegion,
     this.selectedProvince,
     this.selectedCity,
     this.selectedBarangay,
+    required this.onRegionChanged,
     required this.onProvinceChanged,
     required this.onCityChanged,
     required this.onBarangayChanged,
@@ -27,24 +31,55 @@ class AddressSelector extends StatefulWidget {
 class _AddressSelectorState extends State<AddressSelector> {
   final PSGCService _psgcService = PSGCService();
   
+  List<Region> _regions = [];
   List<Province> _provinces = [];
   List<City> _cities = [];
   List<Barangay> _barangays = [];
   
+  bool _isLoadingRegions = false;
   bool _isLoadingProvinces = false;
   bool _isLoadingCities = false;
   bool _isLoadingBarangays = false;
 
+  // NCR region code
+  static const String _ncrRegionCode = '130000000';
+
   @override
   void initState() {
     super.initState();
-    _loadProvinces();
+    _loadRegions();
   }
 
-  Future<void> _loadProvinces() async {
-    setState(() => _isLoadingProvinces = true);
+  bool get _isNCR => widget.selectedRegion?.code == _ncrRegionCode;
+
+  Future<void> _loadRegions() async {
+    setState(() => _isLoadingRegions = true);
     try {
-      final provinces = await _psgcService.fetchProvinces();
+      final regions = await _psgcService.fetchRegions();
+      setState(() {
+        _regions = regions;
+        _isLoadingRegions = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingRegions = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading regions: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadProvinces(String regionCode) async {
+    setState(() {
+      _isLoadingProvinces = true;
+      _provinces = [];
+      _cities = [];
+      _barangays = [];
+    });
+    
+    try {
+      final provinces = await _psgcService.fetchProvincesByRegion(regionCode);
       setState(() {
         _provinces = provinces;
         _isLoadingProvinces = false;
@@ -59,7 +94,7 @@ class _AddressSelectorState extends State<AddressSelector> {
     }
   }
 
-  Future<void> _loadCities(String provinceCode) async {
+  Future<void> _loadCities(String? provinceCode, String? regionCode) async {
     setState(() {
       _isLoadingCities = true;
       _cities = [];
@@ -67,7 +102,17 @@ class _AddressSelectorState extends State<AddressSelector> {
     });
     
     try {
-      final cities = await _psgcService.fetchCitiesByProvince(provinceCode);
+      List<City> cities;
+      if (regionCode == _ncrRegionCode && regionCode != null) {
+        // For NCR, load cities directly by region
+        cities = await _psgcService.fetchCitiesByRegion(regionCode);
+      } else if (provinceCode != null) {
+        // For other regions, load cities by province
+        cities = await _psgcService.fetchCitiesByProvince(provinceCode);
+      } else {
+        cities = [];
+      }
+      
       setState(() {
         _cities = cities;
         _isLoadingCities = false;
@@ -109,21 +154,29 @@ class _AddressSelectorState extends State<AddressSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Province Dropdown
-        _buildDropdown<Province>(
-          label: 'Province',
-          value: widget.selectedProvince,
-          items: _provinces,
-          isLoading: _isLoadingProvinces,
-          itemLabel: (province) => province.name,
-          onChanged: (province) {
-            widget.onProvinceChanged(province);
+        // Region Dropdown
+        _buildDropdown<Region>(
+          label: 'Region',
+          value: widget.selectedRegion,
+          items: _regions,
+          isLoading: _isLoadingRegions,
+          itemLabel: (region) => region.name,
+          onChanged: (region) {
+            widget.onRegionChanged(region);
+            widget.onProvinceChanged(null);
             widget.onCityChanged(null);
             widget.onBarangayChanged(null);
-            if (province != null) {
-              _loadCities(province.code);
+            if (region != null) {
+              if (region.code == _ncrRegionCode) {
+                // For NCR, load cities directly
+                _loadCities(null, region.code);
+              } else {
+                // For other regions, load provinces first
+                _loadProvinces(region.code);
+              }
             } else {
               setState(() {
+                _provinces = [];
                 _cities = [];
                 _barangays = [];
               });
@@ -133,6 +186,32 @@ class _AddressSelectorState extends State<AddressSelector> {
 
         const SizedBox(height: 16),
 
+        // Province Dropdown (hidden for NCR)
+        if (!_isNCR) ...[
+          _buildDropdown<Province>(
+            label: 'Province',
+            value: widget.selectedProvince,
+            items: _provinces,
+            isLoading: _isLoadingProvinces,
+            itemLabel: (province) => province.name,
+            enabled: widget.selectedRegion != null,
+            onChanged: (province) {
+              widget.onProvinceChanged(province);
+              widget.onCityChanged(null);
+              widget.onBarangayChanged(null);
+              if (province != null) {
+                _loadCities(province.code, null);
+              } else {
+                setState(() {
+                  _cities = [];
+                  _barangays = [];
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+
         // City/Municipality Dropdown
         _buildDropdown<City>(
           label: 'City / Municipality',
@@ -140,7 +219,7 @@ class _AddressSelectorState extends State<AddressSelector> {
           items: _cities,
           isLoading: _isLoadingCities,
           itemLabel: (city) => city.name,
-          enabled: widget.selectedProvince != null,
+          enabled: _isNCR ? widget.selectedRegion != null : widget.selectedProvince != null,
           onChanged: (city) {
             widget.onCityChanged(city);
             widget.onBarangayChanged(null);
