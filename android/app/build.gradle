@@ -73,7 +73,8 @@ android {
             debuggable false
             minifyEnabled false
             shrinkResources false
-            // Use default signing for now
+            // Use debug signing for testing/sharing (replace with proper keystore for production)
+            signingConfig signingConfigs.debug
             
             // Optimize for size and performance
             // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
