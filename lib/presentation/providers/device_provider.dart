@@ -178,6 +178,34 @@ class DeviceProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> toggleDeviceActivation(String deviceId) async {
+    try {
+      Logger.info('Toggling device activation for: $deviceId');
+      
+      final updatedDevice = await _deviceRemoteDataSource.toggleDeviceActivation(deviceId);
+      
+      // Update connected device if it's the one being toggled
+      if (_connectedDevice?.id == deviceId) {
+        _connectedDevice = updatedDevice;
+        notifyListeners();
+      }
+      
+      // Update in devices list
+      final index = _devices.indexWhere((d) => d.id == deviceId);
+      if (index != -1) {
+        _devices[index] = updatedDevice;
+        notifyListeners();
+      }
+      
+      Logger.info('Device activation toggled: ${updatedDevice.isActive ? "ON" : "OFF"}');
+      return true;
+    } catch (e) {
+      Logger.error('Failed to toggle device activation: $e');
+      _setError('Failed to toggle device activation');
+      return false;
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

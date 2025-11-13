@@ -121,4 +121,24 @@ class DeviceRemoteDataSource {
       rethrow;
     }
   }
+
+  Future<DeviceModel> toggleDeviceActivation(String deviceId) async {
+    try {
+      Logger.info('Toggling device activation: $deviceId');
+      
+      final response = await _dio.post(
+        ApiEndpoints.deviceActivate(deviceId),
+      );
+
+      if (response.statusCode == 200) {
+        Logger.info('Device activation toggled successfully');
+        return DeviceModel.fromJson(response.data['data']['device']);
+      } else {
+        throw Exception('Failed to toggle device activation');
+      }
+    } catch (e) {
+      Logger.error('Failed to toggle device activation: $e');
+      rethrow;
+    }
+  }
 }

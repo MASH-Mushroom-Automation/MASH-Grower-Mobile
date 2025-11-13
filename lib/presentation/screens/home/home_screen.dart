@@ -44,6 +44,60 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _toggleDevice(bool turnOn) async {
+    final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+    final deviceId = deviceProvider.connectedDevice?.id;
+    
+    if (deviceId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No device connected'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isConnecting = true;
+    });
+
+    try {
+      final success = await deviceProvider.toggleDeviceActivation(deviceId);
+      
+      if (success) {
+        setState(() {
+          _isDeviceOn = turnOn;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(turnOn ? 'Device turned on' : 'Device turned off'),
+            backgroundColor: turnOn ? Colors.green : Colors.orange,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to toggle device'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isConnecting = false;
+      });
+    }
+  }
+
   void _showDeviceToggleConfirmation() {
     showDialog(
       context: context,
@@ -87,15 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              setState(() {
-                _isDeviceOn = false;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Device turned off'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
+              _toggleDevice(false);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
@@ -118,10 +164,11 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: Column(
-        children: [
-          // User Header
-          Consumer<DeviceProvider>(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // User Header
+            Consumer<DeviceProvider>(
             builder: (context, deviceProvider, child) {
               return UserHeader(
                 userName: user != null ? '${user.firstName} ${user.lastName}' : 'Guest',
@@ -154,6 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+        ),
       ),
       bottomNavigationBar: Consumer<DeviceProvider>(
         builder: (context, deviceProvider, child) {
@@ -257,13 +305,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // Dashboard State
   Widget _buildDashboard() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Chamber Status Overview Card
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFFE8F5E8),
               borderRadius: BorderRadius.circular(16),
@@ -297,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 
                 Row(
                   children: [
@@ -309,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             'Device Status',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: Colors.grey.shade700,
                             ),
                           ),
@@ -319,24 +367,24 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icon(
                                 Icons.check_circle,
                                 color: Color(0xFF4CAF50),
-                                size: 20,
+                                size: 18,
                               ),
                               SizedBox(width: 6),
                               Text(
                                 'Online',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF2D5F4C),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           Text(
                             'Active Sensors',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: Colors.grey.shade700,
                             ),
                           ),
@@ -344,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Text(
                             '3 Sensors\n4 Actuators',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: Color(0xFF2D5F4C),
                             ),
@@ -355,22 +403,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     
                     // Status Icon
                     Container(
-                      width: 120,
-                      height: 120,
+                      width: 90,
+                      height: 90,
                       decoration: BoxDecoration(
                         color: const Color(0xFF4CAF50).withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.check_circle_outline,
-                        size: 60,
+                        size: 45,
                         color: Color(0xFF4CAF50),
                       ),
                     ),
                   ],
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 
                 // Sensor Status Grid - responsive layout to avoid overflow
                 LayoutBuilder(
@@ -386,15 +434,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     final spacing = 12 * (crossAxis - 1);
                     final itemWidth = (width - spacing) / crossAxis;
                     // target item height (approx) - increase to give room for 2-line subHeader
-                    const itemHeight = 160.0;
+                    const itemHeight = 140.0;
                     final childAspectRatio = itemWidth / itemHeight;
 
                     return GridView.count(
                       crossAxisCount: crossAxis,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
                       // allow taller cards on narrow screens by lowering the clamp
                       childAspectRatio: childAspectRatio.clamp(0.5, 2.0),
                       children: [
@@ -484,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           
           // Chamber Card
           GestureDetector(
@@ -546,19 +594,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Switch(
                         value: _isDeviceOn,
-                        onChanged: (value) {
+                        onChanged: _isConnecting ? null : (value) {
                           if (!value) {
                             _showDeviceToggleConfirmation();
                           } else {
-                            setState(() {
-                              _isDeviceOn = true;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Device turned on'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                            _toggleDevice(true);
                           }
                         },
                         activeTrackColor: const Color(0xFF4CAF50),

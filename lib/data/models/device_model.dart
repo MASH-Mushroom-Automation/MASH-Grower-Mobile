@@ -6,6 +6,7 @@ class DeviceModel extends Equatable {
   final String name;
   final String? deviceType;
   final String? status;
+  final bool isActive;
   final DateTime? lastSeen;
   final Map<String, dynamic>? configuration;
   final DateTime? createdAt;
@@ -16,6 +17,7 @@ class DeviceModel extends Equatable {
     required this.name,
     this.deviceType,
     this.status,
+    this.isActive = true,
     this.lastSeen,
     this.configuration,
     this.createdAt,
@@ -24,32 +26,38 @@ class DeviceModel extends Equatable {
   factory DeviceModel.fromJson(Map<String, dynamic> json) {
     return DeviceModel(
       id: json['id'] as String,
-      userId: json['user_id'] as String,
+      userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
       name: json['name'] as String,
-      deviceType: json['device_type'] as String?,
+      deviceType: json['type'] as String? ?? json['device_type'] as String?,
       status: json['status'] as String?,
-      lastSeen: json['last_seen'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(json['last_seen'] as int)
-          : null,
+      isActive: json['isActive'] as bool? ?? json['is_active'] as bool? ?? true,
+      lastSeen: json['lastSeen'] != null 
+          ? DateTime.parse(json['lastSeen'] as String)
+          : json['last_seen'] != null 
+              ? DateTime.fromMillisecondsSinceEpoch(json['last_seen'] as int)
+              : null,
       configuration: json['configuration'] != null 
           ? Map<String, dynamic>.from(json['configuration'] as Map)
           : null,
-      createdAt: json['created_at'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int)
-          : null,
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt'] as String)
+          : json['created_at'] != null 
+              ? DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int)
+              : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'user_id': userId,
+      'userId': userId,
       'name': name,
-      'device_type': deviceType,
+      'type': deviceType,
       'status': status,
-      'last_seen': lastSeen?.millisecondsSinceEpoch,
+      'isActive': isActive,
+      'lastSeen': lastSeen?.toIso8601String(),
       'configuration': configuration,
-      'created_at': createdAt?.millisecondsSinceEpoch,
+      'createdAt': createdAt?.toIso8601String(),
     };
   }
 
@@ -60,6 +68,7 @@ class DeviceModel extends Equatable {
       name: map['name'] as String,
       deviceType: map['device_type'] as String?,
       status: map['status'] as String?,
+      isActive: (map['is_active'] as int?) == 1,
       lastSeen: map['last_seen'] != null 
           ? DateTime.fromMillisecondsSinceEpoch(map['last_seen'] as int)
           : null,
@@ -79,6 +88,7 @@ class DeviceModel extends Equatable {
       'name': name,
       'device_type': deviceType,
       'status': status,
+      'is_active': isActive ? 1 : 0,
       'last_seen': lastSeen?.millisecondsSinceEpoch,
       'configuration': configuration != null 
           ? configuration.toString() 
@@ -93,6 +103,7 @@ class DeviceModel extends Equatable {
     String? name,
     String? deviceType,
     String? status,
+    bool? isActive,
     DateTime? lastSeen,
     Map<String, dynamic>? configuration,
     DateTime? createdAt,
@@ -103,6 +114,7 @@ class DeviceModel extends Equatable {
       name: name ?? this.name,
       deviceType: deviceType ?? this.deviceType,
       status: status ?? this.status,
+      isActive: isActive ?? this.isActive,
       lastSeen: lastSeen ?? this.lastSeen,
       configuration: configuration ?? this.configuration,
       createdAt: createdAt ?? this.createdAt,
@@ -160,6 +172,7 @@ class DeviceModel extends Equatable {
         name,
         deviceType,
         status,
+        isActive,
         lastSeen,
         configuration,
         createdAt,

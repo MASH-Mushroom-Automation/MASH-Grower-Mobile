@@ -11,6 +11,8 @@ import '../../../services/device_connection_manager.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/device_provider.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
+import 'wifi_provisioning_screen.dart';
+import 'ble_wifi_provisioning_screen.dart';
 
 /// Hybrid device connection screen supporting:
 /// 1. WebSocket connection (via backend)
@@ -26,18 +28,10 @@ class HybridDeviceConnectionScreen extends StatefulWidget {
 class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   
-  // WebSocket
-  final WebSocketDeviceService _wsService = WebSocketDeviceService();
-  List<Map<String, dynamic>> _cloudDevices = [];
-  bool _isScanningCloud = false;
-  
   // Local Network
   final DeviceConnectionService _localService = DeviceConnectionService();
   List<Map<String, dynamic>> _localDevices = [];
   bool _isScanningLocal = false;
-  
-  // Mock Device
-  final MockDeviceService _mockService = MockDeviceService();
   
   // Manual IP
   final _formKey = GlobalKey<FormState>();
@@ -51,18 +45,39 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
   // Bluetooth
   final BluetoothDeviceService _bluetoothService = BluetoothDeviceService();
   List<BluetoothMashDevice> _bluetoothDevices = [];
+  List<BluetoothMashDevice> _pairedDevices = [];
   bool _isScanningBluetooth = false;
+  bool _loadingPairedDevices = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _setupWebSocketCallbacks();
     _setupBluetoothListener();
     
     // Auto-scan on load
-    _scanCloudDevices();
     _scanLocalDevices();
+    _loadPairedDevices();
+  }
+  
+  Future<void> _loadPairedDevices() async {
+    setState(() => _loadingPairedDevices = true);
+    
+    try {
+      final paired = await _bluetoothService.getPairedDevices();
+      if (mounted) {
+        setState(() {
+          _pairedDevices = paired;
+          _loadingPairedDevices = false;
+        });
+        Logger.info('Loaded ${paired.length} paired devices');
+      }
+    } catch (e) {
+      Logger.error('Error loading paired devices: $e');
+      if (mounted) {
+        setState(() => _loadingPairedDevices = false);
+      }
+    }
   }
 
   @override
@@ -70,36 +85,8 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
     _tabController.dispose();
     _ipController.dispose();
     _portController.dispose();
-    _wsService.disconnect();
     _bluetoothService.dispose();
     super.dispose();
-  }
-
-  void _setupWebSocketCallbacks() {
-    _wsService.onConnected = () {
-      if (mounted) {
-        setState(() => _isConnecting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Connected via WebSocket!'),
-            backgroundColor: Color(0xFF4CAF50),
-          ),
-        );
-        Navigator.pop(context);
-      }
-    };
-    
-    _wsService.onError = (error) {
-      if (mounted) {
-        setState(() => _isConnecting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Connection error: $error'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    };
   }
 
   void _setupBluetoothListener() {
@@ -112,115 +99,13 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
     });
   }
 
-  // ============ CLOUD DEVICES (WebSocket) ============
-  
-  Future<void> _scanCloudDevices() async {
-    setState(() {
-      _isScanningCloud = true;
-      _cloudDevices = [];
-    });
+  // ============ CLOUD DEVICES - REMOVED ============
+  // Cloud functionality removed to simplify and avoid backend dependency
+  // Devices are now discovered via:
+  // 1. Local Network (mDNS discovery)
+  // 2. Bluetooth (BLE scanning)
 
-    try {
-      // TODO: Call backend API to get list of devices
-      await Future.delayed(const Duration(seconds: 2));
-      
-      setState(() {
-        _cloudDevices = [
-          {
-            'deviceId': 'mock-chamber-1',
-            'deviceName': 'Mock Chamber 1',
-            'status': 'online',
-            'mode': 'FRUITING',
-            'connectionType': 'mock',
-            'lastSeen': DateTime.now().subtract(const Duration(minutes: 2)),
-          },
-          {
-            'deviceId': 'chamber-001',
-            'deviceName': 'Chamber 1',
-            'status': 'online',
-            'mode': 'FRUITING',
-            'connectionType': 'cloud',
-            'lastSeen': DateTime.now().subtract(const Duration(minutes: 2)),
-          },
-        ];
-      });
-    } catch (e) {
-      Logger.error('Failed to scan cloud devices: $e');
-    } finally {
-      setState(() => _isScanningCloud = false);
-    }
-  }
-
-  Future<void> _connectToCloudDevice(String deviceId) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    if (authProvider.user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login first'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    setState(() {
-      _isConnecting = true;
-      _selectedDeviceId = deviceId;
-    });
-
-    try {
-      if (deviceId == 'mock-chamber-1') {
-        final connected = await _mockService.connectToDevice(
-          deviceId: deviceId,
-          deviceName: 'Mock Chamber 1',
-        );
-        
-        if (connected && mounted) {
-          final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-          await deviceProvider.connectToMockDevice(
-            deviceId: deviceId,
-            deviceName: 'Mock Chamber 1',
-          );
-          
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Connected to Mock Chamber 1!'),
-              backgroundColor: Color(0xFF4CAF50),
-            ),
-          );
-        } else {
-          throw Exception('Failed to connect to mock device');
-        }
-      } else {
-        const wsUrl = 'ws://localhost:8080/ws/device';
-        const token = 'your-jwt-token';
-        
-        final connected = await _wsService.connect(
-          wsUrl: wsUrl,
-          deviceId: deviceId,
-          userId: authProvider.user!.id,
-          token: token,
-        );
-
-        if (!connected) {
-          throw Exception('Failed to establish WebSocket connection');
-        }
-      }
-    } catch (e) {
-      Logger.error('Cloud connection failed: $e');
-      if (mounted) {
-        setState(() {
-          _isConnecting = false;
-          _selectedDeviceId = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Connection failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+  // Cloud device connection function removed
 
   // ============ LOCAL DEVICES (mDNS Auto-Discovery) ============
   
@@ -653,8 +538,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
             controller: _tabController,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             tabs: const [
-              Tab(icon: Icon(Icons.cloud), text: 'Cloud'),
-              // Tab(icon: Icon(Icons.wifi), text: 'Local'),
+              Tab(icon: Icon(Icons.wifi), text: 'Local Network'),
               Tab(icon: Icon(Icons.bluetooth), text: 'Bluetooth'),
               Tab(icon: Icon(Icons.settings_ethernet), text: 'Manual IP'),
             ],
@@ -664,8 +548,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildCloudTab(),
-          // _buildLocalTab(),
+          _buildLocalTab(),
           _buildBluetoothTab(),
           _buildManualTab(),
         ],
@@ -682,38 +565,45 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
     );
   }
 
-  // ============ CLOUD TAB ============
+  // ============ CLOUD TAB - REMOVED ============
+  // Cloud functionality removed for simplicity
+
+  // ============ LOCAL TAB ============
   
-  Widget _buildCloudTab() {
+  Widget _buildLocalTab() {
     return Column(
       children: [
         _buildInfoBanner(
-          icon: Icons.cloud,
-          title: 'Cloud Connection (WebSocket)',
-          description: 'Connect from anywhere via internet',
-          color: const Color(0xFF2D5F4C),
+          icon: Icons.wifi,
+          title: 'Local Network (Auto-Discovery)',
+          description: 'Devices on same WiFi network',
+          color: Colors.blue,
         ),
         
-        if (_isScanningCloud)
+        if (_isScanningLocal)
           const Expanded(
             child: Center(child: CircularProgressIndicator()),
           )
-        else if (_cloudDevices.isEmpty)
+        else if (_localDevices.isEmpty)
           _buildEmptyState(
-            icon: Icons.cloud_off,
-            message: 'No cloud devices found',
-            onRefresh: _scanCloudDevices,
+            icon: Icons.wifi_off,
+            message: 'No local devices found',
+            subtitle: 'Make sure device is on same WiFi',
+            onRefresh: _scanLocalDevices,
           )
         else
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _cloudDevices.length,
+              itemCount: _localDevices.length,
               itemBuilder: (context, index) {
-                final device = _cloudDevices[index];
+                final device = _localDevices[index];
                 return _buildDeviceCard(
                   device: device,
-                  onTap: () => _connectToCloudDevice(device['deviceId']),
+                  onTap: () => _connectToLocalDevice(
+                    device['ipAddress'],
+                    device['port'],
+                  ),
                 );
               },
             ),
@@ -721,50 +611,6 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
       ],
     );
   }
-
-  // ============ LOCAL TAB ============
-  
-  // Widget _buildLocalTab() {
-  //   return Column(
-  //     children: [
-  //       _buildInfoBanner(
-  //         icon: Icons.wifi,
-  //         title: 'Local Network (Auto-Discovery)',
-  //         description: 'Devices on same WiFi network',
-  //         color: Colors.blue,
-  //       ),
-        
-  //       if (_isScanningLocal)
-  //         const Expanded(
-  //           child: Center(child: CircularProgressIndicator()),
-  //         )
-  //       else if (_localDevices.isEmpty)
-  //         _buildEmptyState(
-  //           icon: Icons.wifi_off,
-  //           message: 'No local devices found',
-  //           subtitle: 'Make sure device is on same WiFi',
-  //           onRefresh: _scanLocalDevices,
-  //         )
-  //       else
-  //         Expanded(
-  //           child: ListView.builder(
-  //             padding: const EdgeInsets.all(16),
-  //             itemCount: _localDevices.length,
-  //             itemBuilder: (context, index) {
-  //               final device = _localDevices[index];
-  //               return _buildDeviceCard(
-  //                 device: device,
-  //                 onTap: () => _connectToLocalDevice(
-  //                   device['ipAddress'],
-  //                   device['port'],
-  //                 ),
-  //               );
-  //             },
-  //           ),
-  //         ),
-  //     ],
-  //   );
-  // }
 
   // ============ BLUETOOTH TAB ============
   
@@ -812,17 +658,45 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
   }
 
   Future<void> _connectToBluetoothDevice(BluetoothMashDevice device) async {
+    // Show WiFi provisioning dialog first
+    final shouldProvision = await _showWiFiProvisioningDialog();
+    
+    if (shouldProvision != true) {
+      Logger.info('User skipped WiFi provisioning for ${device.name}');
+      return;
+    }
+    
     setState(() {
       _isConnecting = true;
       _selectedDeviceId = device.deviceId;
     });
 
     try {
-      Logger.info('Connecting to Bluetooth device: ${device.name}');
+      Logger.info('Opening BLE WiFi provisioning for: ${device.name}');
       
-      final connected = await _bluetoothService.connectToDevice(device);
+      // Check if BLE device is available
+      if (device.device == null) {
+        throw Exception('BLE device not available. Please scan again.');
+      }
       
-      if (connected && mounted) {
+      // Navigate to BLE WiFi provisioning screen
+      // This screen will:
+      // 1. Connect to device via BLE
+      // 2. Scan WiFi networks on phone
+      // 3. Send credentials to Pi via BLE GATT
+      final success = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BLEWiFiProvisioningScreen(
+            device: device.device!,
+            deviceName: device.name,
+          ),
+        ),
+      );
+      
+      if (success == true && mounted) {
+        Logger.info('WiFi provisioning completed successfully');
+        
         // Save to device provider
         final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
         await deviceProvider.connectToDevice(
@@ -832,13 +706,15 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
           port: 0,
         );
         
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Connected via Bluetooth!'),
-            backgroundColor: Color(0xFF4CAF50),
-          ),
-        );
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Device connected successfully!'),
+              backgroundColor: Color(0xFF4CAF50),
+            ),
+          );
+        }
       } else {
         throw Exception('Failed to connect');
       }
@@ -860,6 +736,115 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
     }
   }
 
+  Future<bool?> _showPairingDialog(BluetoothMashDevice device) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Pair with ${device.name}?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will allow the app to connect to your device.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.bluetooth, size: 20, color: Colors.purple),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          device.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Address: ${device.address}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  Text(
+                    'Signal: ${device.rssi} dBm',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Pair'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showWiFiProvisioningDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.wifi, color: Color(0xFF2D5F4C)),
+            SizedBox(width: 12),
+            Text('Configure WiFi?'),
+          ],
+        ),
+        content: const Text(
+          'Would you like to configure WiFi on this device? '
+          'This will allow the device to connect to your network and be accessible online.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Skip'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D5F4C),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Configure WiFi'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBluetoothTab() {
     return Column(
       children: [
@@ -870,40 +855,144 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
           color: Colors.purple,
         ),
         
-        if (_isScanningBluetooth)
-          const Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Scanning for Bluetooth devices...'),
-                ],
+        // Refresh button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _bluetoothDevices.isEmpty 
+                      ? 'No devices found' 
+                      : '${_bluetoothDevices.length} device(s) found',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
               ),
-            ),
-          )
-        else if (_bluetoothDevices.isEmpty)
-          _buildEmptyState(
-            icon: Icons.bluetooth_disabled,
-            message: 'No Bluetooth devices found',
-            subtitle: 'Make sure device Bluetooth is enabled',
-            onRefresh: _scanBluetoothDevices,
-          )
-        else
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _bluetoothDevices.length,
-              itemBuilder: (context, index) {
-                final device = _bluetoothDevices[index];
-                return _buildBluetoothDeviceCard(
-                  device: device,
-                  onTap: () => _connectToBluetoothDevice(device),
-                );
-              },
-            ),
+              ElevatedButton.icon(
+                onPressed: _isScanningBluetooth ? null : _scanBluetoothDevices,
+                icon: _isScanningBluetooth
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.refresh, size: 18),
+                label: Text(_isScanningBluetooth ? 'Scanning...' : 'Scan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+            ],
           ),
+        ),
+        
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Paired Devices Section
+              if (_pairedDevices.isNotEmpty) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.link, size: 20, color: Colors.purple),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Paired Devices (${_pairedDevices.length})',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.purple,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ..._pairedDevices.map((device) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildBluetoothDeviceCard(
+                    device: device,
+                    onTap: () => _connectToBluetoothDevice(device),
+                    isPaired: true,
+                  ),
+                )),
+                const SizedBox(height: 24),
+              ],
+              
+              // Available Devices Section
+              if (_bluetoothDevices.isNotEmpty) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.bluetooth_searching, size: 20, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Available Devices (${_bluetoothDevices.length})',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ..._bluetoothDevices.map((device) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildBluetoothDeviceCard(
+                    device: device,
+                    onTap: () => _connectToBluetoothDevice(device),
+                    isPaired: false,
+                  ),
+                )),
+              ],
+              
+              // Empty State
+              if (_pairedDevices.isEmpty && _bluetoothDevices.isEmpty && !_isScanningBluetooth)
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 60),
+                      Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No Bluetooth devices found',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Pair device in phone settings first,\nthen tap Scan to find it',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              
+              // Scanning Indicator
+              if (_isScanningBluetooth)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Scanning for Bluetooth devices...'),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -911,6 +1000,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
   Widget _buildBluetoothDeviceCard({
     required BluetoothMashDevice device,
     required VoidCallback onTap,
+    bool isPaired = false,
   }) {
     final isSelected = _selectedDeviceId == device.deviceId;
     final isConnecting = _isConnecting && isSelected;
@@ -950,9 +1040,39 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      device.name,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            device.name,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        if (isPaired)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.purple, width: 1),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.link, size: 12, color: Colors.purple),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Paired',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(

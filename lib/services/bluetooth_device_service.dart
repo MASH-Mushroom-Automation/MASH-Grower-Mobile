@@ -46,6 +46,9 @@ class BluetoothDeviceService {
   static const String _deviceNamePrefix = 'MASH-IoT';
   static const Duration _scanDuration = Duration(seconds: 15);
   
+  // Debug mode: Set to true to show ALL Bluetooth devices (for testing)
+  static const bool _debugShowAllDevices = true;
+  
   final List<BluetoothMashDevice> _discoveredDevices = [];
   final StreamController<List<BluetoothMashDevice>> _devicesController = 
       StreamController<List<BluetoothMashDevice>>.broadcast();
@@ -57,6 +60,48 @@ class BluetoothDeviceService {
 
   /// Stream of discovered devices
   Stream<List<BluetoothMashDevice>> get devicesStream => _devicesController.stream;
+  
+  /// Get system-paired (bonded) devices
+  Future<List<BluetoothMashDevice>> getPairedDevices() async {
+    try {
+      Logger.info('Getting system-paired Bluetooth devices...');
+      
+      // Get bonded devices from system
+      final bondedDevices = await FlutterBluePlus.bondedDevices;
+      
+      Logger.info('Found ${bondedDevices.length} paired devices');
+      
+      // Filter for MASH devices (or show all in debug mode)
+      final mashDevices = bondedDevices
+          .where((device) {
+            final name = device.platformName;
+            final shouldShow = _debugShowAllDevices 
+                ? name.isNotEmpty 
+                : (name.isNotEmpty && name.contains(_deviceNamePrefix));
+            
+            if (shouldShow) {
+              Logger.info('Paired device: $name (${device.remoteId.str})');
+            }
+            return shouldShow;
+          })
+          .map((device) => BluetoothMashDevice(
+                deviceId: device.remoteId.str,
+                name: device.platformName.isEmpty ? 'Unknown Device' : device.platformName,
+                address: device.remoteId.str,
+                rssi: 0, // RSSI not available for bonded devices
+                device: device,
+                isConnected: true,
+              ))
+          .toList();
+      
+      Logger.info('Found ${mashDevices.length} paired MASH devices');
+      return mashDevices;
+      
+    } catch (e) {
+      Logger.error('Error getting paired devices: $e');
+      return [];
+    }
+  }
 
   /// Currently discovered devices
   List<BluetoothMashDevice> get discoveredDevices => List.unmodifiable(_discoveredDevices);
@@ -86,8 +131,20 @@ class BluetoothDeviceService {
   /// Request Bluetooth permissions
   Future<bool> requestPermissions() async {
     try {
+      Logger.info('Requesting Bluetooth permissions...');
+      
+      // Check current status first
+      final bluetoothScanStatus = await Permission.bluetoothScan.status;
+      final bluetoothConnectStatus = await Permission.bluetoothConnect.status;
+      final locationStatus = await Permission.location.status;
+      
+      Logger.info('Current permissions:');
+      Logger.info('  - Bluetooth Scan: $bluetoothScanStatus');
+      Logger.info('  - Bluetooth Connect: $bluetoothConnectStatus');
+      Logger.info('  - Location: $locationStatus');
+      
+      // Request permissions
       final statuses = await [
-        Permission.bluetooth,
         Permission.bluetoothScan,
         Permission.bluetoothConnect,
         Permission.location,
@@ -96,7 +153,18 @@ class BluetoothDeviceService {
       final allGranted = statuses.values.every((status) => status.isGranted);
       
       if (!allGranted) {
-        Logger.warning('Not all Bluetooth permissions granted');
+        Logger.warning('Not all Bluetooth permissions granted:');
+        statuses.forEach((permission, status) {
+          Logger.warning('  - $permission: $status');
+        });
+        
+        // Check if permanently denied
+        final permanentlyDenied = statuses.values.any((status) => status.isPermanentlyDenied);
+        if (permanentlyDenied) {
+          Logger.error('Some permissions are permanently denied. Please enable them in Settings.');
+        }
+      } else {
+        Logger.info('✓ All Bluetooth permissions granted');
       }
       
       return allGranted;
@@ -133,31 +201,64 @@ class BluetoothDeviceService {
       _devicesController.add([]);
 
       // Start scanning
+      Logger.info('Starting BLE scan with timeout: $_scanDuration');
       await FlutterBluePlus.startScan(
         timeout: _scanDuration,
         androidUsesFineLocation: true,
       );
+      Logger.info('BLE scan started successfully');
 
       // Listen to scan results
-      _scanSubscription = FlutterBluePlus.scanResults.listen((results) {
-        for (ScanResult result in results) {
-          final device = result.device;
-          final name = device.platformName;
+      _scanSubscription = FlutterBluePlus.scanResults.listen(
+        (results) {
+          Logger.info('Scan results received: ${results.length} devices');
           
-          // Filter for MASH IoT devices
-          if (name.isNotEmpty && name.contains(_deviceNamePrefix)) {
-            _addOrUpdateDevice(
-              BluetoothMashDevice(
-                deviceId: device.remoteId.str,
-                name: name,
-                address: device.remoteId.str,
-                rssi: result.rssi,
-                device: device,
-              ),
-            );
+          for (ScanResult result in results) {
+            final device = result.device;
+            final name = device.platformName;
+            final address = device.remoteId.str;
+            
+            // Debug: Log ALL discovered devices (even without names)
+            Logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            Logger.info('Device found:');
+            Logger.info('  Name: "${name.isEmpty ? "(no name)" : name}"');
+            Logger.info('  Address: $address');
+            Logger.info('  RSSI: ${result.rssi}');
+            Logger.info('  Platform Name: ${device.platformName}');
+            Logger.info('  Debug mode: $_debugShowAllDevices');
+            
+            // Filter for MASH IoT devices (or show all in debug mode)
+            final shouldShow = _debugShowAllDevices 
+                ? name.isNotEmpty  // Show all devices with names
+                : (name.isNotEmpty && name.contains(_deviceNamePrefix));  // Only MASH devices
+            
+            Logger.info('  Should show: $shouldShow');
+            Logger.info('  Filter check: name.isNotEmpty=${name.isNotEmpty}, contains MASH-IoT=${name.contains(_deviceNamePrefix)}');
+            Logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            
+            if (shouldShow) {
+              Logger.info('✓ Adding device to list: $name');
+              _addOrUpdateDevice(
+                BluetoothMashDevice(
+                  deviceId: device.remoteId.str,
+                  name: name.isEmpty ? 'Unknown Device' : name,
+                  address: device.remoteId.str,
+                  rssi: result.rssi,
+                  device: device,
+                ),
+              );
+            } else {
+              Logger.info('✗ Device filtered out: $name');
+            }
           }
-        }
-      });
+        },
+        onError: (error) {
+          Logger.error('Error in scan results stream: $error');
+        },
+        onDone: () {
+          Logger.info('Scan results stream completed');
+        },
+      );
 
       // Auto-stop scanning after duration
       Future.delayed(_scanDuration, () => stopScanning());

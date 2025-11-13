@@ -8,7 +8,7 @@ import '../../auth/login_screen.dart';
 import '../../../../data/models/address/create_address_request_model.dart';
 import '../../../../core/utils/logger.dart';
 
-class SuccessPage extends StatelessWidget {
+class SuccessPage extends StatefulWidget {
   final VoidCallback? onNavigateToLogin;
   
   const SuccessPage({
@@ -73,8 +73,8 @@ class _SuccessPageState extends State<SuccessPage> {
     context.read<RegistrationProvider>().reset();
     
     // Navigate to login screen using callback or default navigation
-    if (onNavigateToLogin != null) {
-      onNavigateToLogin!();
+    if (widget.onNavigateToLogin != null) {
+      widget.onNavigateToLogin!();
     } else {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginScreen()),

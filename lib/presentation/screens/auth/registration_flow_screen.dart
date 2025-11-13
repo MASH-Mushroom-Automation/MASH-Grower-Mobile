@@ -10,7 +10,12 @@ import 'registration_pages/review_submit_page.dart';
 import 'registration_pages/success_page.dart';
 
 class RegistrationFlowScreen extends StatefulWidget {
-  const RegistrationFlowScreen({super.key});
+  final VoidCallback? onNavigateToLogin;
+  
+  const RegistrationFlowScreen({
+    super.key,
+    this.onNavigateToLogin,
+  });
 
   @override
   State<RegistrationFlowScreen> createState() => _RegistrationFlowScreenState();
@@ -119,7 +124,7 @@ class _RegistrationFlowScreenState extends State<RegistrationFlowScreen> {
                 ),
                 
                 // Page 5: Success (OTP verification bypassed)
-                const SuccessPage(),
+                SuccessPage(onNavigateToLogin: widget.onNavigateToLogin),
               ],
             ),
           ),

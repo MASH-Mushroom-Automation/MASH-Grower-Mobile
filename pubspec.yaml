@@ -27,6 +27,8 @@ dependencies:
   multicast_dns: ^0.3.2+6
   flutter_blue_plus: ^1.32.11
   permission_handler: ^11.3.1
+  wifi_scan: ^0.4.1
+  network_info_plus: ^5.0.3
   
   # Firebase
   firebase_messaging: ^15.1.3
@@ -64,6 +66,22 @@ dev_dependencies:
   # Code generation
   json_annotation: ^4.9.0
   json_serializable: ^6.8.0
+  
+  # App Icon Generator
+  flutter_launcher_icons: ^0.13.1
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: false  # Set to true if you have iOS setup
+  image_path: "assets/images/mash-logo.png"
+  
+  # Adaptive icon for Android (modern Android versions)
+  adaptive_icon_background: "#2D5F4C"  # MASH brand green color
+  adaptive_icon_foreground: "assets/images/mash-logo.png"
+  
+  # Optional: Remove old launcher icon
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true

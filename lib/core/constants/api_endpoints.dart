@@ -47,6 +47,7 @@ class ApiEndpoints {
   static const String devices = '/devices';
   static String deviceById(String id) => '/devices/$id';
   static String deviceStatus(String id) => '/devices/$id/status';
+  static String deviceActivate(String id) => '/devices/$id/activate';
   static String deviceCommands(String id) => '/devices/$id/commands';
   static String deviceConfig(String id) => '/devices/$id/config';
   static String deviceLogs(String id) => '/devices/$id/logs';
