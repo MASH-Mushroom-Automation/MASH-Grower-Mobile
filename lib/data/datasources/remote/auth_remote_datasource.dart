@@ -173,7 +173,7 @@ class AuthRemoteDataSource {
   /// Get current user information
   Future<BackendUserModel> getCurrentUser() async {
     try {
-      Logger.info('👤 Fetching current user');
+      Logger.info('👤 Fetching current user from /auth/me');
       
       final response = await _apiClient.get(ApiEndpoints.authMe);
       

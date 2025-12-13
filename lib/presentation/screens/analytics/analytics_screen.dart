@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/device_connection_service.dart';
+import '../../../core/utils/time_formatter.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -19,6 +20,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
   List<dynamic> _aiDecisions = [];
   
   int _selectedHours = 24;
+  String _aggregation = 'minute'; // minute, hour, day
 
   @override
   void initState() {
@@ -89,6 +91,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                         _buildTimeChip('7d', 168),
                         const SizedBox(width: 8),
                         _buildTimeChip('30d', 720),
+                        const SizedBox(width: 16),
+                        const Text('|', style: TextStyle(color: Colors.grey)),
+                        const SizedBox(width: 16),
+                        _buildAggregationChip('Min', 'minute'),
+                        const SizedBox(width: 8),
+                        _buildAggregationChip('Hour', 'hour'),
+                        const SizedBox(width: 8),
+                        _buildAggregationChip('Day', 'day'),
                       ],
                     ),
                   ),
@@ -113,7 +123,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                 Tab(text: 'Overview'),
                 Tab(text: 'Sensors'),
                 Tab(text: 'Actuators'),
-                Tab(text: 'AI Logs'),
+                Tab(text: 'Logs'),
               ],
             ),
           ),
@@ -158,6 +168,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
           label,
           style: TextStyle(
             fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAggregationChip(String label, String aggregation) {
+    final isSelected = _aggregation == aggregation;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _aggregation = aggregation);
+        _loadData();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2D5F4C) : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : Colors.grey.shade700,
           ),
@@ -225,15 +260,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
           ),
           const SizedBox(height: 16),
 
-          if (actuatorUsage != null) ...[
-            _buildUsageBar('Exhaust Fan', actuatorUsage['exhaust_fan'] ?? 0),
-            const SizedBox(height: 12),
-            _buildUsageBar('Blower Fan', actuatorUsage['blower_fan'] ?? 0),
-            const SizedBox(height: 12),
-            _buildUsageBar('Humidifier', actuatorUsage['humidifier'] ?? 0),
-            const SizedBox(height: 12),
-            _buildUsageBar('LED Lights', actuatorUsage['led_lights'] ?? 0),
-          ],
+          if (actuatorUsage != null)
+            _buildUsageChart(actuatorUsage),
 
           const SizedBox(height: 24),
 
@@ -378,64 +406,98 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildUsageBar(String label, int count) {
-    final maxCount = 100;
-    final percentage = (count / maxCount * 100).clamp(0, 100);
-
+  Widget _buildUsageChart(Map<String, dynamic> actuatorUsage) {
+    final data = [
+      {'name': 'Exhaust Fan', 'count': actuatorUsage['exhaust_fan'] ?? 0, 'color': const Color(0xFF4CAF50)},
+      {'name': 'Blower Fan', 'count': actuatorUsage['blower_fan'] ?? 0, 'color': const Color(0xFF66BB6A)},
+      {'name': 'Humidifier', 'count': actuatorUsage['humidifier'] ?? 0, 'color': const Color(0xFF81C784)},
+      {'name': 'LED Lights', 'count': actuatorUsage['led_lights'] ?? 0, 'color': const Color(0xFF9CCC65)},
+    ];
+    
+    final maxCount = data.map((e) => e['count'] as int).reduce((a, b) => a > b ? a : b);
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D5F4C),
+        children: data.map((item) {
+          final name = item['name'] as String;
+          final count = item['count'] as int;
+          final color = item['color'] as Color;
+          final barWidth = maxCount > 0 ? (count / maxCount * 0.8) : 0.0;
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2D5F4C),
+                    ),
+                  ),
                 ),
-              ),
-              Text(
-                '$count times',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: barWidth,
+                        child: Container(
+                          height: 32,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [color, color.withOpacity(0.7)],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              minHeight: 8,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+              ],
             ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildSensorLogCard(Map<String, dynamic> log) {
     final timestamp = log['timestamp'] ?? '';
-    final timeAgo = _formatTimeAgo(timestamp);
+    final timeAgo = _formatTimestamp(timestamp);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -530,7 +592,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
 
   Widget _buildActuatorLogCard(Map<String, dynamic> log) {
     final timestamp = log['timestamp'] ?? '';
-    final timeAgo = _formatTimeAgo(timestamp);
+    final timeAgo = _formatTimestamp(timestamp);
     final triggeredBy = log['triggered_by'] ?? 'manual';
 
     return Container(
@@ -635,7 +697,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
 
   Widget _buildAIDecisionCard(Map<String, dynamic> decision) {
     final timestamp = decision['timestamp'] ?? '';
-    final timeAgo = _formatTimeAgo(timestamp);
+    final timeAgo = _formatTimestamp(timestamp);
     final actions = decision['actions'] as Map<String, dynamic>? ?? {};
     final reasoning = decision['reasoning'] as List<dynamic>? ?? [];
 
@@ -750,14 +812,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     );
   }
 
-  String _formatTimeAgo(String timestamp) {
+  String _formatTimestamp(String? timestamp) {
+    if (timestamp == null) return 'Unknown';
     try {
       final dt = DateTime.parse(timestamp);
-      final diff = DateTime.now().difference(dt);
-      if (diff.inMinutes < 1) return 'Just now';
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      return '${diff.inDays}d ago';
+      return TimeFormatter.formatLogTimestamp(dt);
     } catch (e) {
       return 'Unknown';
     }

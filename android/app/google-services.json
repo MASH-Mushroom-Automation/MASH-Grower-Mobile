@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "542530489821",
-    "project_id": "mashappbuild-a7068",
-    "storage_bucket": "mashappbuild-a7068.firebasestorage.app"
+    "project_number": "1001664140460",
+    "project_id": "mash-5b627",
+    "storage_bucket": "mash-5b627.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:542530489821:android:eb2212c619130837f4ba34",
+        "mobilesdk_app_id": "1:1001664140460:android:REGISTER_ANDROID_APP_IN_FIREBASE_CONSOLE",
         "android_client_info": {
           "package_name": "com.example.mash_grower_mobile"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAurHVXuhSuHpR93ncJQcKxSlYvWO-hpJA"
+          "current_key": "AIzaSyDQryxFIjEjXApWMZP2H2ZkHIlWxUMuVO0"
         }
       ],
       "services": {

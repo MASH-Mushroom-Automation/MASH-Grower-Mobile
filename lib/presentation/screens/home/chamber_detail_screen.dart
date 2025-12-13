@@ -31,6 +31,15 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   bool _blowerFanOn = false;  // Default OFF
   bool _ledOn = false;  // Default OFF
   
+  // Cooldown mechanism to prevent spamming
+  final Map<String, DateTime> _lastActuatorToggle = {};
+  final Duration _cooldownDuration = const Duration(seconds: 3);
+  final Map<String, bool> _actuatorProcessing = {};
+  
+  // Automation status
+  bool _isAutomationEnabled = false;
+  bool _hasShownOverrideWarning = false; // Track if we've shown the warning in this session
+  
   // Mode selection
   String _selectedMode = 'Fruiting Phase';
   final List<String> _modes = ['Fruiting Phase ', 'Spawning Phase'];
@@ -94,9 +103,11 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   void initState() {
     super.initState();
     _fetchSensorData();
+    _fetchAutomationStatus();
     // Update sensor data every 5 seconds
     _sensorUpdateTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _fetchSensorData();
+      _fetchAutomationStatus();
     });
   }
 
@@ -104,6 +115,120 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
   void dispose() {
     _sensorUpdateTimer?.cancel();
     super.dispose();
+  }
+
+  // Helper method to handle actuator toggle with cooldown
+  Future<void> _handleActuatorToggle(
+    String actuatorName,
+    bool value,
+    Function(bool) onSuccess,
+  ) async {
+    // Check cooldown
+    final now = DateTime.now();
+    final lastToggle = _lastActuatorToggle[actuatorName];
+    if (lastToggle != null && now.difference(lastToggle) < _cooldownDuration) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please wait ${_cooldownDuration.inSeconds - now.difference(lastToggle).inSeconds}s before toggling again'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
+    
+    // Check if already processing
+    if (_actuatorProcessing[actuatorName] == true) return;
+    
+    final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+    final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+    
+    // Check if automation is enabled and show confirmation (only once per session)
+    if (_isAutomationEnabled && !_hasShownOverrideWarning) {
+      final shouldProceed = await _showOverrideConfirmation();
+      if (!shouldProceed) return;
+      
+      // Mark that we've shown the warning and disable automation
+      setState(() {
+        _hasShownOverrideWarning = true;
+        _isAutomationEnabled = false;
+      });
+      
+      // Disable automation on backend
+      try {
+        if (isMock) {
+          await _mockService.disableAutomation();
+        } else {
+          await _deviceService.disableAutomation();
+        }
+      } catch (e) {
+        Logger.error('Failed to disable automation on backend: $e');
+      }
+    }
+    
+    setState(() {
+      _actuatorProcessing[actuatorName] = true;
+    });
+    
+    final success = isMock
+        ? await _mockService.setActuator(actuatorName, value)
+        : await _deviceService.controlActuator(actuatorName, value);
+    
+    if (success) {
+      setState(() {
+        onSuccess(value);
+        _lastActuatorToggle[actuatorName] = DateTime.now();
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to control $actuatorName'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    
+    setState(() {
+      _actuatorProcessing[actuatorName] = false;
+    });
+  }
+  
+  Future<bool> _showOverrideConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text('Override MASHAuto?'),
+          ],
+        ),
+        content: const Text(
+          'Manual control will disable MASHAuto. You can re-enable it anytime from the Automation page.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D5F4C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   Future<void> _fetchSensorData() async {
@@ -189,6 +314,33 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
           _isLoadingSensorData = false;
         });
       }
+    }
+  }
+
+  Future<void> _fetchAutomationStatus() async {
+    try {
+      final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+      final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+      
+      Map<String, dynamic>? status;
+      if (isMock) {
+        if (_mockService.isConnected) {
+          status = await _mockService.getAutomationStatus();
+        }
+      } else {
+        if (_deviceService.isConnected) {
+          status = await _deviceService.getAutomationStatus();
+        }
+      }
+      
+      if (status != null && mounted) {
+        setState(() {
+          _isAutomationEnabled = status?['enabled'] ?? false;
+        });
+      }
+    } catch (e) {
+      Logger.error('Failed to fetch automation status: $e');
+      // Silently fail - not critical
     }
   }
 
@@ -721,97 +873,45 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                       icon: Icons.air,
                       label: 'Exhaust Fan',
                       isOn: _fanOn,
-                      onToggle: (value) async {
-                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
-                        final success = isMock
-                            ? await _mockService.setActuator('exhaust_fan', value)
-                            : await _deviceService.controlActuator('exhaust_fan', value);
-                        if (success) {
-                          setState(() {
-                            _fanOn = value;
-                          });
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to control exhaust fan'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
+                      isDisabled: _actuatorProcessing['exhaust_fan'] == true,
+                      onToggle: (value) => _handleActuatorToggle(
+                        'exhaust_fan',
+                        value,
+                        (v) => _fanOn = v,
+                      ),
                     ),
                     _buildActuatorControlCard(
                       icon: Icons.water_drop,
                       label: 'Humidifier',
                       isOn: _humidifierOn,
-                      onToggle: (value) async {
-                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
-                        final success = isMock
-                            ? await _mockService.setActuator('humidifier', value)
-                            : await _deviceService.controlActuator('humidifier', value);
-                        if (success) {
-                          setState(() {
-                            _humidifierOn = value;
-                          });
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to control humidifier'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
+                      isDisabled: _actuatorProcessing['humidifier'] == true,
+                      onToggle: (value) => _handleActuatorToggle(
+                        'humidifier',
+                        value,
+                        (v) => _humidifierOn = v,
+                      ),
                     ),
                     _buildActuatorControlCard(
                       icon: Icons.air_rounded,
                       label: 'Blower Fan',
                       isOn: _blowerFanOn,
-                      onToggle: (value) async {
-                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
-                        final success = isMock
-                            ? await _mockService.setActuator('blower_fan', value)
-                            : await _deviceService.controlActuator('blower_fan', value);
-                        if (success) {
-                          setState(() {
-                            _blowerFanOn = value;
-                          });
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to control blower fan'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
+                      isDisabled: _actuatorProcessing['blower_fan'] == true,
+                      onToggle: (value) => _handleActuatorToggle(
+                        'blower_fan',
+                        value,
+                        (v) => _blowerFanOn = v,
+                      ),
                     ),
                     _buildActuatorControlCard(
                       icon: Icons.light,
                       label: 'LED Lights',
                       isOn: _ledOn,
-                      onToggle: (value) async {
-                        final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-                        final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
-                        final success = isMock
-                            ? await _mockService.setActuator('led_lights', value)
-                            : await _deviceService.controlActuator('led_lights', value);
-                        if (success) {
-                          setState(() {
-                            _ledOn = value;
-                          });
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to control LED lights'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
+                      isDisabled: _actuatorProcessing['led_lights'] == true,
+                      onToggle: (value) => _handleActuatorToggle(
+                        'led_lights',
+                        value,
+                        (v) => _ledOn = v,
+                      ),
                     ),
                   ],
                 );
@@ -838,7 +938,7 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
                 // Already on home/chamber detail
                 Navigator.pop(context);
               } else if (index == 1) {
-                // AI Automation
+                // Automation
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (_) => const AIAutomationScreen()),
@@ -1121,8 +1221,8 @@ class _ChamberDetailScreenState extends State<ChamberDetailScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _EditChamberModal(
         initialName: device?.name ?? 'Chamber 1',
-        initialLocation: device?.configuration?['location']?.toString() ?? 'Main Facility',
-        initialDescription: device?.configuration?['description']?.toString() ?? '',
+        initialLocation: device?.location ?? 'Main Facility',
+        initialDescription: device?.description ?? '',
         onSave: (name, location, description) async {
           final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
           final currentDevice = deviceProvider.connectedDevice;

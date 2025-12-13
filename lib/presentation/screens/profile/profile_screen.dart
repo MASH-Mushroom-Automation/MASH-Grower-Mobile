@@ -61,10 +61,15 @@ class ProfileScreen extends StatelessWidget {
                         CircleAvatar(
                           radius: 40,
                           backgroundColor: const Color(0xFF2D5F4C),
-                          backgroundImage: user.profileImageUrl != null
+                          backgroundImage: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
                               ? NetworkImage(user.profileImageUrl!)
                               : null,
-                          child: user.profileImageUrl == null
+                          onBackgroundImageError: user.profileImageUrl != null
+                              ? (exception, stackTrace) {
+                                  // Silently handle image load errors
+                                }
+                              : null,
+                          child: user.profileImageUrl == null || user.profileImageUrl!.isEmpty
                               ? Icon(
                                   Icons.person,
                                   size: 40,

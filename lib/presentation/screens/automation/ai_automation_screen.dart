@@ -28,11 +28,13 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
 
   Future<void> _loadAutomationStatus() async {
     setState(() => _isLoading = true);
-    
+
     try {
-      final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-      final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
-      
+      final deviceProvider =
+          Provider.of<DeviceProvider>(context, listen: false);
+      final isMock =
+          deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+
       final status = isMock
           ? await _mockService.getAutomationStatus()
           : await _deviceService.getAutomationStatus();
@@ -42,7 +44,7 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
       final history = isMock
           ? await _mockService.getAutomationHistory(limit: 10)
           : await _deviceService.getAutomationHistory(limit: 10);
-      
+
       if (mounted) {
         setState(() {
           _automationStatus = status;
@@ -63,27 +65,33 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-      final isMock = deviceProvider.connectedDevice?.configuration?['isMock'] == true;
-      
+      final deviceProvider =
+          Provider.of<DeviceProvider>(context, listen: false);
+      final isMock =
+          deviceProvider.connectedDevice?.configuration?['isMock'] == true;
+
       final success = value
-          ? (isMock ? await _mockService.enableAutomation() : await _deviceService.enableAutomation())
-          : (isMock ? await _mockService.disableAutomation() : await _deviceService.disableAutomation());
+          ? (isMock
+              ? await _mockService.enableAutomation()
+              : await _deviceService.enableAutomation())
+          : (isMock
+              ? await _mockService.disableAutomation()
+              : await _deviceService.disableAutomation());
 
       if (success && mounted) {
         setState(() {
           _isAutomationEnabled = value;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              value ? 'AI Automation Enabled' : 'AI Automation Disabled',
+              value ? 'Automation Enabled' : 'Automation Disabled',
             ),
             backgroundColor: value ? const Color(0xFF4CAF50) : Colors.grey,
           ),
         );
-        
+
         await _loadAutomationStatus();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,289 +125,289 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // AI Automation Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: _isAutomationEnabled
-                    ? [const Color(0xFF4CAF50), const Color(0xFF66BB6A)]
-                    : [Colors.grey.shade300, Colors.grey.shade400],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+    return Material(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Automation Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: _isAutomationEnabled
+                      ? [const Color(0xFF4CAF50), const Color(0xFF66BB6A)]
+                      : [Colors.grey.shade300, Colors.grey.shade400],
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.psychology,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AI Automation',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Intelligent chamber control',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Transform.scale(
-                      scale: 1.2,
-                      child: Switch(
-                        value: _isAutomationEnabled,
-                        onChanged: _toggleAutomation,
-                        activeColor: Colors.white,
-                        activeTrackColor: Colors.white.withValues(alpha: 0.5),
-                        inactiveThumbColor: Colors.white,
-                        inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _isAutomationEnabled
-                                ? Icons.check_circle
-                                : Icons.pause_circle,
-                            color: _isAutomationEnabled
-                                ? const Color(0xFF4CAF50)
-                                : Colors.grey,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _isAutomationEnabled ? 'Active' : 'Paused',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: _isAutomationEnabled
-                                  ? const Color(0xFF4CAF50)
-                                  : Colors.grey,
-                            ),
-                          ),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.psychology,
+                          color: Colors.white,
+                          size: 32,
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _isAutomationEnabled
-                            ? 'AI is actively monitoring and controlling your chamber based on sensor data and optimal growing conditions.'
-                            : 'Enable AI automation to let the system automatically manage temperature, humidity, and CO2 levels.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Automation',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Intelligent chamber control',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Transform.scale(
+                        scale: 1.2,
+                        child: Switch(
+                          value: _isAutomationEnabled,
+                          onChanged: _toggleAutomation,
+                          activeColor: Colors.white,
+                          activeTrackColor: Colors.white.withValues(alpha: 0.5),
+                          inactiveThumbColor: Colors.white,
+                          inactiveTrackColor:
+                              Colors.white.withValues(alpha: 0.3),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              _isAutomationEnabled
+                                  ? Icons.check_circle
+                                  : Icons.pause_circle,
+                              color: _isAutomationEnabled
+                                  ? const Color(0xFF4CAF50)
+                                  : Colors.grey,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isAutomationEnabled ? 'Active' : 'Paused',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: _isAutomationEnabled
+                                    ? const Color(0xFF4CAF50)
+                                    : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _isAutomationEnabled
+                              ? 'MASHAuto is actively monitoring and controlling your chamber based on sensor data and optimal growing conditions.'
+                              : 'Enable MASHAuto to let the system automatically manage temperature, humidity, and CO2 levels.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // MASHAuto Features Help Button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'How MASHAuto Works',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D5F4C),
+                  ),
+                ),
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.help_outline,
+                      color: Color(0xFF4CAF50),
+                      size: 24,
+                    ),
+                  ),
+                  onPressed: _showAIFeaturesModal,
                 ),
               ],
             ),
-          ),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-          // AI Features Help Button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'How AI Works',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D5F4C),
-                ),
+            // Actuator Status Section
+            const Text(
+              'Actuator Status',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D5F4C),
               ),
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.help_outline,
-                    color: Color(0xFF4CAF50),
-                    size: 24,
-                  ),
-                ),
-                onPressed: _showAIFeaturesModal,
+            ),
+
+            const SizedBox(height: 16),
+
+            if (_actuatorStates != null) ...[
+              _buildActuatorStatusCard(
+                'Exhaust Fan',
+                Icons.air,
+                _actuatorStates!['exhaust_fan'] ?? false,
+              ),
+              const SizedBox(height: 12),
+              _buildActuatorStatusCard(
+                'Humidifier',
+                Icons.water_drop,
+                _actuatorStates!['humidifier'] ?? false,
+              ),
+              const SizedBox(height: 12),
+              _buildActuatorStatusCard(
+                'Blower Fan',
+                Icons.air_rounded,
+                _actuatorStates!['blower_fan'] ?? false,
+              ),
+              const SizedBox(height: 12),
+              _buildActuatorStatusCard(
+                'LED Lights',
+                Icons.light,
+                _actuatorStates!['led_lights'] ?? false,
               ),
             ],
-          ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-          // Actuator Status Section
-          const Text(
-            'Actuator Status',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D5F4C),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          if (_actuatorStates != null) ...[
-            _buildActuatorStatusCard(
-              'Exhaust Fan',
-              Icons.air,
-              _actuatorStates!['exhaust_fan'] ?? false,
-            ),
-            const SizedBox(height: 12),
-            _buildActuatorStatusCard(
-              'Humidifier',
-              Icons.water_drop,
-              _actuatorStates!['humidifier'] ?? false,
-            ),
-            const SizedBox(height: 12),
-            _buildActuatorStatusCard(
-              'Blower Fan',
-              Icons.air_rounded,
-              _actuatorStates!['blower_fan'] ?? false,
-            ),
-            const SizedBox(height: 12),
-            _buildActuatorStatusCard(
-              'LED Lights',
-              Icons.light,
-              _actuatorStates!['led_lights'] ?? false,
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // AI Decision History Section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Recent AI Decisions',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D5F4C),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Color(0xFF2D5F4C)),
-                onPressed: _loadAutomationStatus,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          if (_decisionHistory.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  _isAutomationEnabled
-                      ? 'Waiting for AI decisions...'
-                      : 'Enable AI to see decisions',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
-            )
-          else
-            ...(_decisionHistory.take(5).map((decision) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildDecisionCard(decision),
-              );
-            }).toList()),
-
-          const SizedBox(height: 24),
-
-          // Info Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E8),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
+            // AI Decision History Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: Color(0xFF2D5F4C),
-                  size: 24,
+                const Text(
+                  'Recent MASHAuto Decisions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D5F4C),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Color(0xFF2D5F4C)),
+                  onPressed: _loadAutomationStatus,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            if (_decisionHistory.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
                   child: Text(
-                    'You can manually override AI decisions at any time from the Chamber Detail screen.',
+                    _isAutomationEnabled
+                        ? 'Waiting for MASHAuto decisions...'
+                        : 'Enable MASHAuto to see decisions',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade800,
+                      color: Colors.grey.shade600,
                     ),
                   ),
                 ),
-              ],
+              )
+            else
+              ...(_decisionHistory.take(5).map((decision) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildDecisionCard(decision),
+                );
+              }).toList()),
+
+            const SizedBox(height: 24),
+
+            // Info Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    color: Color(0xFF2D5F4C),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'You can manually override MASHAuto decisions at any time from the Chamber Detail screen.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -550,10 +558,12 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
               spacing: 8,
               runSpacing: 8,
               children: actions.entries.map((entry) {
-                final actuatorName = entry.key.replaceAll('_', ' ').toUpperCase();
+                final actuatorName =
+                    entry.key.replaceAll('_', ' ').toUpperCase();
                 final isOn = entry.value as bool;
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: isOn
                         ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
@@ -579,7 +589,9 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isOn ? const Color(0xFF2D5F4C) : Colors.red.shade700,
+                          color: isOn
+                              ? const Color(0xFF2D5F4C)
+                              : Colors.red.shade700,
                         ),
                       ),
                     ],
@@ -746,7 +758,7 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
                   const SizedBox(width: 16),
                   const Expanded(
                     child: Text(
-                      'AI Features',
+                      'MASHAuto Features',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -805,7 +817,7 @@ class _AIAutomationScreenState extends State<AIAutomationScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'AI makes decisions every 10 seconds based on real-time sensor data',
+                        'MASHAuto makes decisions every 10 seconds based on real-time sensor data',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey.shade800,

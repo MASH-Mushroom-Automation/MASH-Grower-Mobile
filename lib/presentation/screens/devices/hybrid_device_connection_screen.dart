@@ -285,8 +285,8 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
               // Local Network
               _buildTutorialSection(
                 icon: Icons.wifi,
-                title: 'Local Network',
-                color: Colors.blue,
+                title: 'Local',
+                color: Colors.green,
                 tips: [
                   'Automatic device discovery on same WiFi',
                   'Faster connection speed',
@@ -307,7 +307,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
               _buildTutorialSection(
                 icon: Icons.bluetooth,
                 title: 'Bluetooth Connection',
-                color: Colors.purple,
+                color: Colors.blue,
                 tips: [
                   'Direct device-to-device connection',
                   'Works offline without WiFi',
@@ -538,7 +538,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
             controller: _tabController,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             tabs: const [
-              Tab(icon: Icon(Icons.wifi), text: 'Local Network'),
+              Tab(icon: Icon(Icons.wifi), text: 'Local'),
               Tab(icon: Icon(Icons.bluetooth), text: 'Bluetooth'),
               Tab(icon: Icon(Icons.settings_ethernet), text: 'Manual IP'),
             ],
@@ -575,9 +575,9 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
       children: [
         _buildInfoBanner(
           icon: Icons.wifi,
-          title: 'Local Network (Auto-Discovery)',
+          title: 'Local (Auto-Discovery)',
           description: 'Devices on same WiFi network',
-          color: Colors.blue,
+          color: Colors.green,
         ),
         
         if (_isScanningLocal)
@@ -852,7 +852,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
           icon: Icons.bluetooth,
           title: 'Bluetooth Connection',
           description: 'Direct connection via Bluetooth',
-          color: Colors.purple,
+          color: Colors.blue,
         ),
         
         // Refresh button
@@ -885,7 +885,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
                     : const Icon(Icons.refresh, size: 18),
                 label: Text(_isScanningBluetooth ? 'Scanning...' : 'Scan'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
+                  backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
@@ -902,14 +902,14 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
               if (_pairedDevices.isNotEmpty) ...[
                 Row(
                   children: [
-                    const Icon(Icons.link, size: 20, color: Colors.purple),
+                    const Icon(Icons.link, size: 20, color: Colors.blue),
                     const SizedBox(width: 8),
                     Text(
                       'Paired Devices (${_pairedDevices.length})',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.purple,
+                        color: Colors.blue,
                       ),
                     ),
                   ],
@@ -1011,7 +1011,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? Colors.purple : Colors.grey.shade300,
+          color: isSelected ? Colors.blue : Colors.grey.shade300,
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -1026,12 +1026,12 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.1),
+                  color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.bluetooth,
-                  color: Colors.purple,
+                  color: Colors.blue,
                   size: 32,
                 ),
               ),
@@ -1052,21 +1052,21 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.purple.withOpacity(0.1),
+                              color: Colors.blue.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.purple, width: 1),
+                              border: Border.all(color: Colors.blue, width: 1),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.link, size: 12, color: Colors.purple),
+                                Icon(Icons.link, size: 12, color: Colors.blue),
                                 SizedBox(width: 4),
                                 Text(
                                   'Paired',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.purple,
+                                    color: Colors.blue,
                                   ),
                                 ),
                               ],
@@ -1107,7 +1107,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else
-                const Icon(Icons.chevron_right, color: Colors.purple),
+                const Icon(Icons.chevron_right, color: Colors.blue),
             ],
           ),
         ),

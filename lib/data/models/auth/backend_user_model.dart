@@ -60,7 +60,12 @@ class BackendUserModel extends Equatable {
       lastName: json['lastName'] as String,
       middleName: json['middleName'] as String?,
       contactNumber: json['contactNumber'] as String?,
-      avatarUrl: json['avatarUrl'] as String?,
+      avatarUrl: json['avatarUrl'] as String? ?? 
+                 json['imageUrl'] as String? ?? 
+                 json['avatar_url'] as String? ?? 
+                 json['image_url'] as String? ?? 
+                 json['profileImageUrl'] as String? ?? 
+                 json['profile_image_url'] as String?, // Support multiple field name variations
       isEmailVerified: json['isEmailVerified'] as bool? ?? false,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: json['createdAt'] != null 

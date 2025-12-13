@@ -193,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return _currentNavIndex == 0
                     ? (hasDevice ? _buildDashboard() : _buildNoDeviceState())
                     : _currentNavIndex == 1
-                        ? (hasDevice ? const AIAutomationScreen() : _buildNoDeviceMessage('AI Automation'))
+                        ? (hasDevice ? const AIAutomationScreen() : _buildNoDeviceMessage('Automation'))
                         : _currentNavIndex == 2
                             ? (hasDevice ? const AnalyticsScreen() : _buildNoDeviceMessage('Analytics'))
                             : const UserSettingsScreen();
@@ -449,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _buildSensorStatusCard(
                           icon: Icons.thermostat,
                           label: 'Chamber Sensor',
-                          subHeader: 'Temperature • Humidity • CO2',
+                          subHeader: 'Temp. • Humidity • CO2',
                           status: '1 Sensor active',
                         ),
                         _buildSensorStatusCard(
@@ -482,57 +482,23 @@ class _HomeScreenState extends State<HomeScreen> {
           
           const SizedBox(height: 20),
           
-          // Search Bar and Add New Button
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 12),
-                      Icon(Icons.search, color: Colors.grey.shade400),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search',
-                            hintStyle: TextStyle(color: Colors.grey.shade400),
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.visibility, color: Color(0xFF2D5F4C)),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ),
+          // Add Device Button
+          OutlinedButton.icon(
+            onPressed: _handleAddNewDevice,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF2D5F4C),
+              side: const BorderSide(color: Color(0xFF2D5F4C)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: _handleAddNewDevice,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2D5F4C),
-                  side: const BorderSide(color: Color(0xFF2D5F4C)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                icon: const Icon(Icons.add, size: 20),
-                label: const Text('Add New'),
-              ),
-            ],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              minimumSize: const Size(double.infinity, 48),
+            ),
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text('Add Device'),
           ),
           
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
           // Chamber Card
           GestureDetector(

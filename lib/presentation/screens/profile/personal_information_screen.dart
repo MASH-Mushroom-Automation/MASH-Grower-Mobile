@@ -42,29 +42,29 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-              );
-            },
-            icon: const Icon(
-              Icons.edit,
-              color: Color(0xFF2D5F4C),
-              size: 20,
-            ),
-            label: const Text(
-              'Edit',
-              style: TextStyle(
-                color: Color(0xFF2D5F4C),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+        // actions: [
+          // TextButton.icon(
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+          //     );
+          //   },
+          //   icon: const Icon(
+          //     Icons.edit,
+          //     color: Color(0xFF2D5F4C),
+          //     size: 20,
+          //   ),
+            // label: const Text(
+            //   'Edit',
+            //   style: TextStyle(
+            //     color: Color(0xFF2D5F4C),
+            //     fontSize: 16,
+            //     fontWeight: FontWeight.w600,
+            //   ),
+            // ),
+        //   ),
+        // ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -95,11 +95,13 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                       color: const Color(0xFF2D5F4C).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: user.profileImageUrl != null
+                    child: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
                         ? ClipOval(
                             child: Image.network(
                               user.profileImageUrl!,
                               fit: BoxFit.cover,
+                              width: 80,
+                              height: 80,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Icon(
                                   Icons.person,
@@ -146,13 +148,31 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
             const SizedBox(height: 24),
 
             // Personal Details Section
-            const Text(
-              'Personal Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D5F4C),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Personal Details',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D5F4C),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.edit, size: 18, color: Color(0xFF2D5F4C)),
+                  label: const Text(
+                    'Edit',
+                    style: TextStyle(color: Color(0xFF2D5F4C)),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
 
@@ -225,8 +245,54 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Device Cards
-            ..._registeredDevices.map((device) => _buildDeviceCard(device)),
+            // Device Cards or Empty State
+            if (_registeredDevices.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.devices_other,
+                        size: 64,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No Devices Registered',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Connect your first device to get started',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ..._registeredDevices.map((device) => _buildDeviceCard(device)),
 
             const SizedBox(height: 24),
 

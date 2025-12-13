@@ -34,8 +34,15 @@ class UserHeader extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: const Color(0xFF2D5F4C),
-            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
-            child: avatarUrl == null
+            backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                ? NetworkImage(avatarUrl!)
+                : null,
+            onBackgroundImageError: avatarUrl != null
+                ? (exception, stackTrace) {
+                    // Silently handle image load errors
+                  }
+                : null,
+            child: avatarUrl == null || avatarUrl!.isEmpty
                 ? Text(
                     _getInitials(userName),
                     style: const TextStyle(

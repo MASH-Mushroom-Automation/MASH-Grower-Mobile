@@ -117,16 +117,26 @@ class AuthProvider extends ChangeNotifier {
         // Store backend user data
         _backendUser = response.user;
         
+        // NOTE: Backend should include avatarUrl/imageUrl in the login response
+        // Currently the backend only returns: id, email, firstName, lastName
+        // TODO: Update backend to include user.avatarUrl or user.imageUrl in /auth/login response
+        
+        print('📸 Image URL from backend: ${response.user!.avatarUrl}');
+        if (response.user!.avatarUrl == null) {
+          print('⚠️ Backend is not returning avatarUrl/imageUrl in login response');
+          print('   Backend should include one of these fields: avatarUrl, imageUrl, avatar_url, image_url');
+        }
+        
         // Create user model from backend user
         _user = UserModel(
-          id: response.user!.id,
-          email: response.user!.email,
-          firstName: response.user!.firstName,
-          lastName: response.user!.lastName,
-          profileImageUrl: response.user!.avatarUrl,
+          id: _backendUser!.id,
+          email: _backendUser!.email,
+          firstName: _backendUser!.firstName,
+          lastName: _backendUser!.lastName,
+          profileImageUrl: _backendUser!.avatarUrl,
           role: 'grower',
-          createdAt: response.user!.createdAt,
-          updatedAt: response.user!.updatedAt,
+          createdAt: _backendUser!.createdAt,
+          updatedAt: _backendUser!.updatedAt,
         );
 
         // JWT tokens are already stored by AuthRepository
@@ -137,10 +147,10 @@ class AuthProvider extends ChangeNotifier {
           final recentAccountsService = RecentAccountsService();
           await recentAccountsService.initialize();
           await recentAccountsService.addRecentAccount(
-            email: response.user!.email,
-            firstName: response.user!.firstName,
-            lastName: response.user!.lastName,
-            profileImageUrl: response.user!.avatarUrl,
+            email: _backendUser!.email,
+            firstName: _backendUser!.firstName,
+            lastName: _backendUser!.lastName,
+            profileImageUrl: _backendUser!.avatarUrl,
             password: password,
             rememberPassword: rememberPassword,
           );
@@ -149,7 +159,7 @@ class AuthProvider extends ChangeNotifier {
         }
         
         Logger.authLogin('Backend API Login - $normalizedEmail');
-        Logger.info('✅ User logged in: ${response.user!.displayName}');
+        Logger.info('✅ User logged in: ${_backendUser!.displayName}');
         
         // Set loading to false before notifying listeners
         _isLoading = false;

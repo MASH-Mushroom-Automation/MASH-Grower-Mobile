@@ -13,7 +13,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  final _emailController = TextEditingController();
   bool _isLoading = false;
 
   @override
@@ -31,7 +30,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _firstNameController.text = user.firstName ?? '';
         _lastNameController.text = user.lastName ?? '';
-        _emailController.text = user.email;
       });
     }
   }
@@ -40,7 +38,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -120,62 +117,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Photo
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2D5F4C),
-                        shape: BoxShape.circle,
-                      ),
-                      child: user.profileImageUrl != null
-                          ? ClipOval(
-                              child: Image.network(
-                                user.profileImageUrl!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: Colors.white,
-                                  );
-                                },
-                              ),
-                            )
-                          : const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Colors.white,
-                            ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D5F4C),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
               // First Name
               Text(
                 'First Name',
@@ -250,40 +191,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   }
                   return null;
                 },
-              ),
-
-              const SizedBox(height: 20),
-
-              // Email (Read-only)
-              Text(
-                'Email',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _emailController,
-                enabled: false,
-                decoration: InputDecoration(
-                  hintText: 'Enter email',
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  disabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
               ),
 
               const SizedBox(height: 32),

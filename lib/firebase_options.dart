@@ -41,49 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCv_crn26Vy32Awi95qu08twfx99PkaQAM',
-    appId: '1:542530489821:web:45e60f3692aae868f4ba34',
-    messagingSenderId: '542530489821',
-    projectId: 'mashappbuild-a7068',
-    authDomain: 'mashappbuild-a7068.firebaseapp.com',
-    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
-    measurementId: 'G-XP60TMMYJH',
+    apiKey: 'AIzaSyDQryxFIjEjXApWMZP2H2ZkHIlWxUMuVO0',
+    appId: '1:1001664140460:web:b4b2f9fe91dc55873cfb09',
+    messagingSenderId: '1001664140460',
+    projectId: 'mash-5b627',
+    authDomain: 'mash-5b627.firebaseapp.com',
+    storageBucket: 'mash-5b627.firebasestorage.app',
+    measurementId: 'G-JW9J55J60Q',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAurHVXuhSuHpR93ncJQcKxSlYvWO-hpJA',
-    appId: '1:542530489821:android:eb2212c619130837f4ba34',
-    messagingSenderId: '542530489821',
-    projectId: 'mashappbuild-a7068',
-    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
+    apiKey: 'AIzaSyDQryxFIjEjXApWMZP2H2ZkHIlWxUMuVO0',
+    appId: '1:1001664140460:android:REGISTER_IN_FIREBASE_CONSOLE',
+    messagingSenderId: '1001664140460',
+    projectId: 'mash-5b627',
+    storageBucket: 'mash-5b627.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCuoaBFKm_tsmxLrcIRBaSFplty6ud1qOo',
-    appId: '1:542530489821:ios:96b576ee636b3627f4ba34',
-    messagingSenderId: '542530489821',
-    projectId: 'mashappbuild-a7068',
-    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
+    apiKey: 'AIzaSyDQryxFIjEjXApWMZP2H2ZkHIlWxUMuVO0',
+    appId: '1:1001664140460:ios:REGISTER_IN_FIREBASE_CONSOLE',
+    messagingSenderId: '1001664140460',
+    projectId: 'mash-5b627',
+    storageBucket: 'mash-5b627.firebasestorage.app',
     iosBundleId: 'com.example.mashGrowerMobile',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCuoaBFKm_tsmxLrcIRBaSFplty6ud1qOo',
-    appId: '1:542530489821:ios:96b576ee636b3627f4ba34',
-    messagingSenderId: '542530489821',
-    projectId: 'mashappbuild-a7068',
-    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
+    apiKey: 'AIzaSyDQryxFIjEjXApWMZP2H2ZkHIlWxUMuVO0',
+    appId: '1:1001664140460:ios:REGISTER_IN_FIREBASE_CONSOLE',
+    messagingSenderId: '1001664140460',
+    projectId: 'mash-5b627',
+    storageBucket: 'mash-5b627.firebasestorage.app',
     iosBundleId: 'com.example.mashGrowerMobile',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCv_crn26Vy32Awi95qu08twfx99PkaQAM',
-    appId: '1:542530489821:web:15ef157b8232d78bf4ba34',
-    messagingSenderId: '542530489821',
-    projectId: 'mashappbuild-a7068',
-    authDomain: 'mashappbuild-a7068.firebaseapp.com',
-    storageBucket: 'mashappbuild-a7068.firebasestorage.app',
-    measurementId: 'G-PQ9CFPJH7M',
+    apiKey: 'AIzaSyDQryxFIjEjXApWMZP2H2ZkHIlWxUMuVO0',
+    appId: '1:1001664140460:web:b4b2f9fe91dc55873cfb09',
+    messagingSenderId: '1001664140460',
+    projectId: 'mash-5b627',
+    authDomain: 'mash-5b627.firebaseapp.com',
+    storageBucket: 'mash-5b627.firebasestorage.app',
+    measurementId: 'G-JW9J55J60Q',
   );
 
 }

@@ -235,9 +235,12 @@ class _EmailPageState extends State<EmailPage> {
                   backgroundColor: Colors.white,
                 ),
                 icon: Image.asset(
-                  'icons/google.png',
+                  'assets/icons/google.png',
                   height: 24,
-                  width: 24
+                  width: 24,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.g_mobiledata, color: Colors.red, size: 24);
+                  },
                 ),
                 label: const Text(
                   'Sign up with Google',
@@ -262,7 +265,7 @@ class _EmailPageState extends State<EmailPage> {
                   backgroundColor: Colors.white,
                 ),
                 icon: Image.asset(
-                  'icons/facebook.png',
+                  'assets/icons/facebook.png',
                   height: 24,
                   width: 24,
                   errorBuilder: (context, error, stackTrace) {

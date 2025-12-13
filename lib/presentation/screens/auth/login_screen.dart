@@ -303,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     backgroundColor: Colors.white,
                   ),
                   icon: Image.asset(
-                    'icons/google.png',
+                    'assets/icons/google.png',
                     height: 24,
                     width: 24
                   ),
@@ -330,7 +330,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     backgroundColor: Colors.white,
                   ),
                   icon: Image.asset(
-                    'icons/facebook.png',
+                    'assets/icons/facebook.png',
                     height: 24,
                     width: 24,
                     errorBuilder: (context, error, stackTrace) {
