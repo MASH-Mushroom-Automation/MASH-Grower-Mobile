@@ -15,7 +15,7 @@ class EnvironmentConfig {
       case Environment.development:
         return 'http://localhost:3000/api/v1';
       case Environment.production:
-        return 'https://mash-backend-api-production.up.railway.app/api/v1';
+        return 'https://mash-space.up.railway.app/api/v1';
     }
   }
   
@@ -24,7 +24,7 @@ class EnvironmentConfig {
       case Environment.development:
         return 'ws://localhost:3000/ws';
       case Environment.production:
-        return 'wss://mash-backend-api-production.up.railway.app/ws';
+        return 'wss://mash-space.up.railway.app/ws';
     }
   }
   

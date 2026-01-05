@@ -35,7 +35,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Set environment (change this for production builds)
-  EnvironmentConfig.setEnvironment(Environment.production); // Using Railway: https://mash-backend-api-production.up.railway.app
+  EnvironmentConfig.setEnvironment(Environment.production); // Using Railway: https://mash-space.up.railway.app
   
   // Initialize Firebase
   await Firebase.initializeApp(
