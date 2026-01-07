@@ -188,16 +188,20 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
+      body: Column(
+        children: [
+          // Scrollable content area
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 20),
 
-              // Step Indicator
+                    // Step Indicator
               const RegistrationStepIndicatorWithLabels(
                 currentStep: 2,
                 stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
@@ -421,59 +425,79 @@ class _AccountSetupPageState extends State<AccountSetupPage> {
                 },
               ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-
-              // Navigation Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: widget.onBack,
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 56),
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.white,
-                      ),
-                      child: const Text(
-                        'Back',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: _handleNext,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D5F4C),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Next',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 32),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
+
+          // Fixed bottom navigation buttons
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: widget.onBack,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 56),
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.white,
+                        ),
+                        child: const Text(
+                          'Back',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _handleNext,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D5F4C),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Next',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

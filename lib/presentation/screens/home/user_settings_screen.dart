@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../../../core/services/biometric_service.dart';
+import '../../../core/services/session_manager.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../auth/login_screen.dart';
@@ -23,6 +25,34 @@ class UserSettingsScreen extends StatefulWidget {
 }
 
 class _UserSettingsScreenState extends State<UserSettingsScreen> {
+  final BiometricService _biometricService = BiometricService();
+  final SessionManager _sessionManager = SessionManager();
+  bool _isBiometricAvailable = false;
+  bool _isBiometricEnabled = false;
+  String _biometricType = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricStatus();
+  }
+
+  Future<void> _checkBiometricStatus() async {
+    final isAvailable = await _biometricService.canCheckBiometrics();
+    final isEnabled = await _biometricService.isBiometricEnabled();
+    final types = await _biometricService.getAvailableBiometrics();
+    final typeDescription = types.isNotEmpty 
+        ? await _biometricService.getBiometricDescription()
+        : 'Biometric';
+    
+    if (mounted) {
+      setState(() {
+        _isBiometricAvailable = isAvailable;
+        _isBiometricEnabled = isEnabled;
+        _biometricType = typeDescription;
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -75,6 +105,61 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                     );
+                  },
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Security Settings Section
+            _buildSettingsSection(
+              context,
+              title: 'Security',
+              items: [
+                if (_isBiometricAvailable)
+                  _SettingsItem(
+                    icon: Icons.fingerprint,
+                    title: '$_biometricType Authentication',
+                    subtitle: _isBiometricEnabled ? 'Enabled' : 'Disabled',
+                    trailing: Switch(
+                      value: _isBiometricEnabled,
+                      onChanged: (value) async {
+                        if (value) {
+                          final success = await _biometricService.enableBiometricAuth();
+                          if (success) {
+                            await _checkBiometricStatus();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('$_biometricType authentication enabled'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          await _biometricService.disableBiometricAuth();
+                          await _checkBiometricStatus();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('$_biometricType authentication disabled'),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      activeColor: const Color(0xFF2D5F4C),
+                    ),
+                    onTap: null, // Disable tap since switch handles it
+                  ),
+                _SettingsItem(
+                  icon: Icons.timer,
+                  title: 'Session Timeout',
+                  subtitle: 'Auto-logout after 30 minutes of inactivity',
+                  onTap: () {
+                    _showSessionTimeoutInfo(context);
                   },
                 ),
               ],
@@ -347,6 +432,115 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSessionTimeoutInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.timer, color: Color(0xFF2D5F4C)),
+            SizedBox(width: 12),
+            Text('Session Timeout'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Session Management',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Your session will automatically expire after 30 minutes of inactivity for security purposes.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.green.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You\'ll receive a warning 5 minutes before expiration',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Benefits:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildBulletPoint('Protects your account from unauthorized access'),
+            _buildBulletPoint('Automatically logs you out when idle'),
+            _buildBulletPoint('Can be extended with a tap'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '• ',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/utils/validators.dart';
+import '../../../../core/utils/password_strength_validator.dart';
 import '../../../widgets/common/validated_text_field.dart';
+import '../../../widgets/password_strength_indicator.dart';
 import '../../../providers/registration_provider.dart';
 import '../../../widgets/registration/registration_step_indicator.dart';
 
@@ -24,8 +26,11 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final PasswordStrengthValidator _strengthValidator = PasswordStrengthValidator();
+  
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  PasswordStrengthResult? _passwordStrength;
 
   // Password requirements
   bool _hasMinLength = false;
@@ -35,20 +40,21 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
   @override
   void initState() {
     super.initState();
-    _passwordController.addListener(_checkPasswordRequirements);
+    _passwordController.addListener(_checkPasswordStrength);
   }
 
   @override
   void dispose() {
-    _passwordController.removeListener(_checkPasswordRequirements);
+    _passwordController.removeListener(_checkPasswordStrength);
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _checkPasswordRequirements() {
+  void _checkPasswordStrength() {
     final password = _passwordController.text;
     setState(() {
+      _passwordStrength = PasswordStrengthValidator.validate(password);
       _hasMinLength = password.length >= 8;
       _hasUppercase = password.contains(RegExp(r'[A-Z]'));
       _hasNumber = password.contains(RegExp(r'[0-9]'));
@@ -70,18 +76,22 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
+      body: Column(
+        children: [
+          // Scrollable content area
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 20),
 
-              // Step Indicator
-              const RegistrationStepIndicatorWithLabels(
-                currentStep: 3,
+                    // Step Indicator
+                    const RegistrationStepIndicatorWithLabels(
+                      currentStep: 3,
                 stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
               ),
 
@@ -157,12 +167,16 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
 
               const SizedBox(height: 24),
 
-              // Password Requirements
-              _buildRequirement('At least 8 characters', _hasMinLength),
-              const SizedBox(height: 8),
-              _buildRequirement('At least one uppercase letter', _hasUppercase),
-              const SizedBox(height: 8),
-              _buildRequirement('At least one number', _hasNumber),
+              // Password Strength Indicator
+              if (_passwordStrength != null && _passwordController.text.isNotEmpty)
+                Column(
+                  children: [
+                    PasswordStrengthIndicator(
+                      password: _passwordController.text,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
 
               const SizedBox(height: 32),
 
@@ -189,72 +203,92 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                 ),
               ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-
-              // Navigation Buttons
-              Consumer<RegistrationProvider>(
-                builder: (context, provider, child) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: provider.isLoading ? null : widget.onBack,
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(0, 56),
-                            side: BorderSide(color: Colors.grey.shade300),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: Colors.white,
-                          ),
-                          child: const Text(
-                            'Back',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: provider.isLoading ? null : _handleNext,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D5F4C),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(0, 56),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: provider.isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Text(
-                                  'Next',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+              const SizedBox(height: 32),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
+
+          // Fixed bottom navigation buttons
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Consumer<RegistrationProvider>(
+                  builder: (context, provider, child) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: provider.isLoading ? null : widget.onBack,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 56),
+                              side: BorderSide(color: Colors.grey.shade300),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Colors.white,
+                            ),
+                            child: const Text(
+                              'Back',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: provider.isLoading ? null : _handleNext,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2D5F4C),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(0, 56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: provider.isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Next',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
