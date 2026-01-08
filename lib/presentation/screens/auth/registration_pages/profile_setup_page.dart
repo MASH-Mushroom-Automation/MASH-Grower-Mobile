@@ -57,77 +57,96 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
+    return Column(
+      children: [
+        // Scrollable content area
+        Expanded(
+          child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 20),
 
-              // Step Indicator
-              const RegistrationStepIndicatorWithLabels(
-                currentStep: 1,
-                stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
+            // Step Indicator
+            const RegistrationStepIndicatorWithLabels(
+              currentStep: 1,
+              stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
+            ),
+
+            const SizedBox(height: 32),
+
+            // Title
+            Text(
+              'Create New Account',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2D5F4C),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Fill in your details to register your account',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 40),
+
+            // First Name
+            ValidatedTextField(
+              key: const Key('registration_firstname_field'),
+              controller: _firstNameController,
+              label: 'First Name',
+              hintText: 'Enter your first name',
+              validator: (value) => Validators.validateName(value, 'First name'),
+              prefixIcon: const Icon(Icons.person_outline),
+              textCapitalization: TextCapitalization.words,
+            ),
+
+            const SizedBox(height: 20),
+
+            // Last Name
+            ValidatedTextField(
+              key: const Key('registration_lastname_field'),
+              controller: _lastNameController,
+              label: 'Last Name',
+              hintText: 'Enter your last name',
+              validator: (value) => Validators.validateName(value, 'Last name'),
+              prefixIcon: const Icon(Icons.person_outline),
+              textCapitalization: TextCapitalization.words,
+            ),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+        ),
+      ),
+
+        // Fixed bottom navigation buttons
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
               ),
-
-              const SizedBox(height: 32),
-
-              // Title
-              Text(
-                'Create New Account',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2D5F4C),
-                    ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'Fill in your details to register your account',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 40),
-
- 
-
-              // First Name
-              ValidatedTextField(
-                key: const Key('registration_firstname_field'),
-                controller: _firstNameController,
-                label: 'First Name',
-                hintText: 'Enter your first name',
-                validator: (value) => Validators.validateName(value, 'First name'),
-                prefixIcon: const Icon(Icons.person_outline),
-                textCapitalization: TextCapitalization.words,
-              ),
-
-              const SizedBox(height: 20),
-
-              // Last Name
-              ValidatedTextField(
-                key: const Key('registration_lastname_field'),
-                controller: _lastNameController,
-                label: 'Last Name',
-                hintText: 'Enter your last name',
-                validator: (value) => Validators.validateName(value, 'Last name'),
-                prefixIcon: const Icon(Icons.person_outline),
-                textCapitalization: TextCapitalization.words,
-              ),
-
-              SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-
-              // Navigation Buttons
-              Row(
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
@@ -174,10 +193,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

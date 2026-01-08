@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/utils/validators.dart';
+import '../../../core/services/biometric_service.dart';
+import '../../../core/services/session_manager.dart';
 import '../../widgets/common/validated_text_field.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
@@ -24,14 +26,36 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final BiometricService _biometricService = BiometricService();
+  final SessionManager _sessionManager = SessionManager();
+  
   bool _obscurePassword = true;
   bool _rememberPassword = false;
+  bool _isBiometricAvailable = false;
+  bool _isBiometricEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final isAvailable = await _biometricService.canCheckBiometrics();
+    final isEnabled = await _biometricService.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _isBiometricAvailable = isAvailable;
+        _isBiometricEnabled = isEnabled;
+      });
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -49,6 +73,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
+      // Start session with SessionManager
+      await _sessionManager.startSession(
+        userId: authProvider.user!.id,
+        email: authProvider.user!.email,
+        rememberMe: _rememberPassword,
+      );
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
@@ -62,6 +93,35 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleBiometricLogin() async {
+    try {
+      final authenticated = await _biometricService.authenticate();
+
+      if (authenticated && mounted) {
+        // In production, retrieve stored credentials securely and authenticate
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Biometric authentication successful! Full implementation coming soon.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // TODO: Retrieve and use stored credentials after successful biometric auth
+        // final success = await authProvider.signInWithEmail(storedEmail, storedPassword);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Biometric authentication failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleGoogleLogin() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.signInWithGoogle();
@@ -71,12 +131,6 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
-  }
-
-  Future<void> _handleFacebookLogin() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Facebook login not implemented yet')),
-    );
   }
 
   @override
@@ -197,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 8),
                 
-                // Remember Password Checkbox
+                // Remember Me Checkbox
                 Row(
                   children: [
                     Checkbox(
@@ -211,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     Expanded(
                       child: Text(
-                        'Remember Password',
+                        'Remember Me',
                         style: TextStyle(
                           color: Colors.grey.shade700,
                           fontSize: 14,
@@ -274,6 +328,38 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 24),
                 
+                // Biometric Login Button (if available and enabled)
+                if (_isBiometricAvailable && _isBiometricEnabled)
+                  Column(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _handleBiometricLogin,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 56),
+                          side: const BorderSide(color: Color(0xFF2D5F4C)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.white,
+                        ),
+                        icon: const Icon(
+                          Icons.fingerprint,
+                          color: Color(0xFF2D5F4C),
+                          size: 28,
+                        ),
+                        label: const Text(
+                          'Login with Biometric',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF2D5F4C),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                
                 // Divider
                 Row(
                   children: [
@@ -309,36 +395,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   label: const Text(
                     'Login with Google',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Facebook Login
-                OutlinedButton.icon(
-                  onPressed: _handleFacebookLogin,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56),
-                    side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.white,
-                  ),
-                  icon: Image.asset(
-                    'assets/icons/facebook.png',
-                    height: 24,
-                    width: 24,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
-                    },
-                  ),
-                  label: const Text(
-                    'Login with Facebook',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.black87,

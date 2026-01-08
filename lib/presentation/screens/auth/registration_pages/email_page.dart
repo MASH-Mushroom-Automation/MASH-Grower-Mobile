@@ -60,13 +60,6 @@ class _EmailPageState extends State<EmailPage> {
     );
   }
 
-  Future<void> _handleFacebookSignUp() async {
-    // TODO: Implement Facebook Sign-Up
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Facebook Sign-Up not implemented yet')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,36 +237,6 @@ class _EmailPageState extends State<EmailPage> {
                 ),
                 label: const Text(
                   'Sign up with Google',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Facebook Sign-up
-              OutlinedButton.icon(
-                onPressed: _handleFacebookSignUp,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.white,
-                ),
-                icon: Image.asset(
-                  'assets/icons/facebook.png',
-                  height: 24,
-                  width: 24,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24);
-                  },
-                ),
-                label: const Text(
-                  'Sign up with Facebook',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.black87,

@@ -88,26 +88,30 @@ class _PhoneOtpVerificationPageState extends State<PhoneOtpVerificationPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 20),
+      body: Column(
+        children: [
+          // Scrollable content area
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
 
-            // Step Indicator
-            RegistrationStepIndicatorWithLabels(
-              currentStep: 2,
-              stepLabels: ['Verify Email', 'Profile', 'Phone Verify', 'Account', 'Password'],
-            ),
+                  // Step Indicator
+                  RegistrationStepIndicatorWithLabels(
+                    currentStep: 2,
+                    stepLabels: ['Verify Email', 'Profile', 'Phone Verify', 'Account', 'Password'],
+                  ),
 
-            const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-            // Title
-            Text(
-              'Verify Phone Number',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+                  // Title
+                  Text(
+                    'Verify Phone Number',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                 color: const Color(0xFF2D5F4C),
               ),
               textAlign: TextAlign.center,
@@ -211,52 +215,7 @@ class _PhoneOtpVerificationPageState extends State<PhoneOtpVerificationPage> {
                 ),
               ),
 
-            const SizedBox(height: 40),
-
-            // Continue Button
-            ElevatedButton(
-              onPressed: _verifyOtp,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D5F4C),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Verify & Continue',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-
             const SizedBox(height: 20),
-
-            // Back Button
-            OutlinedButton(
-              onPressed: widget.onBack,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF2D5F4C)),
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Change Phone Number',
-                style: TextStyle(
-                  color: Color(0xFF2D5F4C),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
 
             // Skip Option
             TextButton(
@@ -272,8 +231,77 @@ class _PhoneOtpVerificationPageState extends State<PhoneOtpVerificationPage> {
                 ),
               ),
             ),
-          ],
-        ),
+
+            const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ),
+
+          // Fixed bottom navigation buttons
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Verify Button
+                    ElevatedButton(
+                      onPressed: _verifyOtp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2D5F4C),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Verify & Continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Back Button
+                    OutlinedButton(
+                      onPressed: widget.onBack,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF2D5F4C)),
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Change Phone Number',
+                        style: TextStyle(
+                          color: Color(0xFF2D5F4C),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

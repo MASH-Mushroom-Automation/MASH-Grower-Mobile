@@ -101,42 +101,46 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 50),
+      body: Column(
+        children: [
+          // Scrollable content area
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 50),
 
-            // Step Indicator
-            const RegistrationStepIndicatorWithLabels(
-              currentStep: 5,
-              stepLabels: ['Email', 'Password', 'Profile', 'Review', 'Verify'],
-            ),
-
-            const SizedBox(height: 40),
-
-            // Title
-            Text(
-              'Verify Your Email',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF2D5F4C),
+                  // Step Indicator
+                  const RegistrationStepIndicatorWithLabels(
+                    currentStep: 5,
+                    stepLabels: ['Email', 'Password', 'Profile', 'Review', 'Verify'],
                   ),
-              textAlign: TextAlign.center,
-            ),
 
-            const SizedBox(height: 8),
+                  const SizedBox(height: 40),
 
-            Text(
-              'Enter the 6-digit code we sent to your email',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
+                  // Title
+                  Text(
+                    'Verify Your Email',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF2D5F4C),
+                        ),
+                    textAlign: TextAlign.center,
                   ),
-              textAlign: TextAlign.center,
-            ),
 
-            const SizedBox(height: 48),
+                  const SizedBox(height: 8),
+
+                  Text(
+                    'Enter the 6-digit code we sent to your email',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 48),
 
             // Verification Instructions
             Consumer<RegistrationProvider>(
@@ -250,15 +254,33 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
               },
             ),
 
-            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+            const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ),
 
-            // Navigation Buttons
-            Consumer<RegistrationProvider>(
-              builder: (context, provider, child) {
-                return Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
+          // Fixed bottom navigation buttons
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Consumer<RegistrationProvider>(
+                  builder: (context, provider, child) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
                         onPressed: widget.onBack,
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(0, 56),
@@ -313,8 +335,10 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                 );
               },
             ),
-          ],
-        ),
+            ),
+            ),
+          ),
+        ],
       ),
     );
   }

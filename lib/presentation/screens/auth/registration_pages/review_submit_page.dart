@@ -55,19 +55,23 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: Consumer<RegistrationProvider>(
-        builder: (context, provider, child) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 20),
+      body: Column(
+        children: [
+          // Scrollable content area
+          Expanded(
+            child: Consumer<RegistrationProvider>(
+              builder: (context, provider, child) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 20),
 
-                // Step Indicator
-                const RegistrationStepIndicatorWithLabels(
-                  currentStep: 4,
-                  stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
+                      // Step Indicator
+                      const RegistrationStepIndicatorWithLabels(
+                        currentStep: 4,
+                        stepLabels: ['Email', 'Profile', 'Account', 'Password', 'Review'],
                 ),
 
                 const SizedBox(height: 32),
@@ -162,9 +166,29 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                 ),
 
                 const SizedBox(height: 32),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
 
-                // Action Buttons
-                Row(
+          // Fixed bottom navigation buttons
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
                   children: [
                     // Back Button
                     Expanded(
@@ -224,12 +248,10 @@ class _ReviewSubmitPageState extends State<ReviewSubmitPage> {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

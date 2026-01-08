@@ -10,6 +10,18 @@ class StorageKeys {
   static const String biometricEnabled = 'biometric_enabled';
   static const String biometricCredentials = 'biometric_credentials';
   
+  // Session Management
+  static const String rememberMe = 'remember_me';
+  static const String currentUserId = 'current_user_id';
+  static const String currentUserEmail = 'current_user_email';
+  static const String sessionStartTime = 'session_start_time';
+  static const String sessionTimeout = 'session_timeout';
+  
+  // Multi-Factor Authentication
+  static const String mfaEnabled = 'mfa_enabled';
+  static const String mfaSecret = 'mfa_secret';
+  static const String trustedDevices = 'trusted_devices';
+  
   // User Preferences
   static const String themeMode = 'theme_mode';
   static const String language = 'language';
