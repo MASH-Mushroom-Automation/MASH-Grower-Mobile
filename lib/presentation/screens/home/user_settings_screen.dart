@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/session_manager.dart';
+import '../../../core/services/offline_handler.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../auth/login_screen.dart';
@@ -29,6 +30,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
   final SessionManager _sessionManager = SessionManager();
   bool _isBiometricAvailable = false;
   bool _isBiometricEnabled = false;
+  bool _hasBiometricHardware = false;
   String _biometricType = '';
 
   @override
@@ -38,19 +40,48 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
   }
 
   Future<void> _checkBiometricStatus() async {
-    final isAvailable = await _biometricService.canCheckBiometrics();
-    final isEnabled = await _biometricService.isBiometricEnabled();
-    final types = await _biometricService.getAvailableBiometrics();
-    final typeDescription = types.isNotEmpty 
-        ? await _biometricService.getBiometricDescription()
-        : 'Biometric';
-    
-    if (mounted) {
-      setState(() {
-        _isBiometricAvailable = isAvailable;
-        _isBiometricEnabled = isEnabled;
-        _biometricType = typeDescription;
-      });
+    try {
+      // Get all biometric status information
+      final isAvailable = await _biometricService.canCheckBiometrics();
+      final isEnabled = await _biometricService.isBiometricEnabled();
+      final types = await _biometricService.getAvailableBiometrics();
+      final hasHardware = await _biometricService.isDeviceSupported();
+      
+      // Debug logging
+      print('🔐 Biometric Detection Debug:');
+      print('  - canCheckBiometrics: $isAvailable');
+      print('  - isDeviceSupported: $hasHardware');
+      print('  - getAvailableBiometrics: $types');
+      print('  - Currently enabled: $isEnabled');
+      
+      final typeDescription = types.isNotEmpty 
+          ? await _biometricService.getBiometricDescription()
+          : 'Biometric';
+      
+      // Biometrics are available if we can check them OR device supports them
+      // Some Android devices return empty list from getAvailableBiometrics but still work
+      final biometricsAvailable = isAvailable || hasHardware;
+      
+      if (mounted) {
+        setState(() {
+          _isBiometricAvailable = biometricsAvailable;
+          _isBiometricEnabled = isEnabled;
+          _biometricType = typeDescription;
+          _hasBiometricHardware = hasHardware;
+        });
+        
+        print('  - Final availability: $biometricsAvailable');
+      }
+    } catch (e) {
+      print('❌ Error checking biometric status: $e');
+      if (mounted) {
+        setState(() {
+          _isBiometricAvailable = false;
+          _isBiometricEnabled = false;
+          _biometricType = 'Biometric';
+          _hasBiometricHardware = false;
+        });
+      }
     }
   }
   @override
@@ -126,25 +157,42 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                       value: _isBiometricEnabled,
                       onChanged: (value) async {
                         if (value) {
-                          final success = await _biometricService.enableBiometricAuth();
+                          // Enabling biometric authentication
+                          final success = await _biometricService.enableBiometricAuth(
+                            reason: 'Enable $_biometricType authentication for quick login',
+                          );
+                          
                           if (success) {
                             await _checkBiometricStatus();
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('$_biometricType authentication enabled'),
+                                  content: Text('$_biometricType authentication enabled. Login with password once to complete setup.'),
                                   backgroundColor: Colors.green,
+                                  duration: const Duration(seconds: 4),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Authentication failed or cancelled
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to enable $_biometricType authentication. Please make sure biometric authentication is set up on your device.'),
+                                  backgroundColor: Colors.orange,
+                                  duration: const Duration(seconds: 4),
                                 ),
                               );
                             }
                           }
                         } else {
+                          // Disabling biometric authentication
                           await _biometricService.disableBiometricAuth();
                           await _checkBiometricStatus();
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('$_biometricType authentication disabled'),
+                                content: Text('$_biometricType authentication disabled and credentials cleared'),
                               ),
                             );
                           }
@@ -153,6 +201,44 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
                       activeColor: const Color(0xFF2D5F4C),
                     ),
                     onTap: null, // Disable tap since switch handles it
+                  ),
+                // Debug info for biometric status (only in debug mode)
+                if (kDebugMode)
+                  _SettingsItem(
+                    icon: Icons.bug_report,
+                    title: 'Biometric Debug Info',
+                    subtitle: 'Tap to see detailed detection info',
+                    trailing: Icon(Icons.info_outline, color: Colors.blue),
+                    onTap: () async {
+                      final types = await _biometricService.getAvailableBiometrics();
+                      final canCheck = await _biometricService.canCheckBiometrics();
+                      final supported = await _biometricService.isDeviceSupported();
+                      
+                      if (mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Biometric Detection Info'),
+                            content: Text(
+                              'canCheckBiometrics: $canCheck\n'
+                              'isDeviceSupported: $supported\n'
+                              'getAvailableBiometrics: $types\n'
+                              '\n'
+                              'Available: $_isBiometricAvailable\n'
+                              'Hardware: $_hasBiometricHardware\n'
+                              'Enabled: $_isBiometricEnabled\n'
+                              'Type: $_biometricType'
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
                   ),
                 _SettingsItem(
                   icon: Icons.timer,
@@ -192,7 +278,59 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
             
             const SizedBox(height: 16),
             
-            // App Settings section removed (Language not supported)
+            // App Settings
+            Consumer<ThemeProvider>(
+              builder: (context, themeProvider, child) {
+                return _buildSettingsSection(
+                  context,
+                  title: 'App Settings',
+                  items: [
+                    _SettingsItem(
+                      icon: Icons.cloud_off_outlined,
+                      title: 'Offline Mode',
+                      subtitle: OfflineHandler().isForcedOffline 
+                          ? 'Enabled (Manual)' 
+                          : OfflineHandler().isOnline 
+                              ? 'Online' 
+                              : 'Offline (Auto)',
+                      trailing: Switch(
+                        value: OfflineHandler().isForcedOffline,
+                        onChanged: (value) async {
+                          await OfflineHandler().setForcedOfflineMode(value);
+                          setState(() {}); // Trigger rebuild
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  value 
+                                      ? 'Offline mode enabled. App will not connect to internet.' 
+                                      : 'Offline mode disabled. App will connect when available.',
+                                ),
+                                backgroundColor: value ? Colors.orange : Colors.green,
+                              ),
+                            );
+                          }
+                        },
+                        activeColor: const Color(0xFF2D5F4C),
+                      ),
+                      onTap: () {
+                        _showOfflineModeInfo(context);
+                      },
+                    ),
+                    _SettingsItem(
+                      icon: Icons.dark_mode_outlined,
+                      title: 'Theme',
+                      subtitle: _getThemeModeText(themeProvider.themeMode),
+                      onTap: () {
+                        _showThemeDialog(context, themeProvider);
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+            
+            const SizedBox(height: 16),
             
             _buildSettingsSection(
               context,
@@ -540,6 +678,178 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  String _getThemeModeText(ThemeMode themeMode) {
+    switch (themeMode) {
+      case ThemeMode.system:
+        return 'System default';
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+    }
+  }
+
+  void _showThemeDialog(BuildContext context, ThemeProvider themeProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Choose Theme'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<ThemeMode>(
+              title: const Text('System'),
+              subtitle: const Text('Follow device settings'),
+              value: ThemeMode.system,
+              groupValue: themeProvider.themeMode,
+              onChanged: (value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('Light'),
+              value: ThemeMode.light,
+              groupValue: themeProvider.themeMode,
+              onChanged: (value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('Dark'),
+              value: ThemeMode.dark,
+              groupValue: themeProvider.themeMode,
+              onChanged: (value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showOfflineModeInfo(BuildContext context) {
+    final handler = OfflineHandler();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              handler.isForcedOffline ? Icons.cloud_off : Icons.cloud_queue,
+              color: const Color(0xFF2D5F4C),
+            ),
+            const SizedBox(width: 12),
+            const Text('Offline Mode'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'What is Offline Mode?',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Offline mode lets you use the app without an internet connection. Your device data is cached locally and will sync when you\'re back online.',
+                style: TextStyle(color: Colors.grey.shade700, height: 1.5),
+              ),
+              const Divider(height: 24),
+              const Text(
+                'Features Available Offline:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              _buildOfflineFeature('View cached sensor data'),
+              _buildOfflineFeature('Control devices locally'),
+              _buildOfflineFeature('Queue actions for later sync'),
+              _buildOfflineFeature('View device history'),
+              const Divider(height: 24),
+              const Text(
+                'Manual Offline Mode:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Toggle the switch to force offline mode even when internet is available. This is useful for:\n\n• Saving mobile data\n• Working in areas with poor connectivity\n• Testing offline functionality',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.5),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Data will automatically sync when connection is restored.',
+                        style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          if (handler.isForcedOffline)
+            TextButton(
+              onPressed: () {
+                handler.setForcedOfflineMode(false);
+                setState(() {});
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Offline mode disabled'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Go Online'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineFeature(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, size: 16, color: Colors.green),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );

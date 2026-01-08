@@ -11,7 +11,14 @@ import '../analytics/analytics_screen.dart';
 import 'user_settings_screen.dart';
 
 class ChamberDetailScreen extends StatefulWidget {
-  const ChamberDetailScreen({super.key});
+  final String? deviceId;
+  final String? deviceName;
+  
+  const ChamberDetailScreen({
+    super.key,
+    this.deviceId,
+    this.deviceName,
+  });
 
   @override
   State<ChamberDetailScreen> createState() => _ChamberDetailScreenState();

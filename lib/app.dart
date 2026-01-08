@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'presentation/providers/auth_provider.dart';
@@ -9,6 +8,8 @@ import 'presentation/screens/onboarding/onboarding_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/auth/registration_flow_screen.dart';
 import 'presentation/screens/home/home_screen.dart';
+import 'presentation/widgets/offline_indicator.dart';
+import 'core/services/offline_handler.dart';
 import 'core/utils/logger.dart';
 
 class App extends StatefulWidget {
@@ -19,8 +20,6 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  final Connectivity _connectivity = Connectivity();
-  bool _isOnline = true;
   bool _onboardingCompleted = false;
   bool _onboardingChecked = false;
   bool _showRegistrationAfterOnboarding = false;
@@ -28,25 +27,14 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-    _checkConnectivity();
-    _listenToConnectivityChanges();
+    _initializeOfflineHandler();
     _checkOnboardingStatus();
   }
 
-  void _checkConnectivity() async {
-    final connectivityResults = await _connectivity.checkConnectivity();
-    setState(() {
-      _isOnline = !connectivityResults.contains(ConnectivityResult.none);
-    });
-  }
-
-  void _listenToConnectivityChanges() {
-    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      setState(() {
-        _isOnline = !results.contains(ConnectivityResult.none);
-      });
-      Logger.info('Connectivity changed: ${results.map((r) => r.name).join(', ')}');
-    });
+  /// Initialize offline handler service
+  Future<void> _initializeOfflineHandler() async {
+    await OfflineHandler().initialize();
+    Logger.info('Offline handler initialized');
   }
 
   void _checkOnboardingStatus() async {
@@ -113,33 +101,10 @@ class _AppState extends State<App> {
         }
 
         // Show main app with offline indicator
-        return Stack(
+        return const Column(
           children: [
-            const HomeScreen(),
-            if (!_isOnline)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 10,
-                left: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.wifi_off, color: Colors.white, size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        'Offline Mode',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            OfflineIndicator(),
+            Expanded(child: HomeScreen()),
           ],
         );
       },

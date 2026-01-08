@@ -73,6 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
+      // Store credentials for biometric login if enabled
+      if (_isBiometricEnabled) {
+        await _biometricService.storeBiometricCredentials(
+          normalizedEmail,
+          _passwordController.text,
+        );
+      }
+      
       // Start session with SessionManager
       await _sessionManager.startSession(
         userId: authProvider.user!.id,
@@ -95,20 +103,51 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleBiometricLogin() async {
     try {
-      final authenticated = await _biometricService.authenticate();
+      final authenticated = await _biometricService.authenticate(
+        reason: 'Authenticate to login to MASH Grower',
+      );
 
       if (authenticated && mounted) {
-        // In production, retrieve stored credentials securely and authenticate
+        // Retrieve stored credentials
+        final credentials = await _biometricService.retrieveBiometricCredentials();
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Biometric authentication successful! Full implementation coming soon.'),
-            backgroundColor: Colors.green,
-          ),
+        if (credentials == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No stored credentials found. Please login normally first.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+
+        // Authenticate with stored credentials
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final success = await authProvider.signInWithEmail(
+          credentials['email']!,
+          credentials['password']!,
+          rememberPassword: true,
         );
-        
-        // TODO: Retrieve and use stored credentials after successful biometric auth
-        // final success = await authProvider.signInWithEmail(storedEmail, storedPassword);
+
+        if (success && mounted) {
+          // Start session
+          await _sessionManager.startSession(
+            userId: authProvider.user!.id,
+            email: authProvider.user!.email,
+            rememberMe: true,
+          );
+
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        } else if (mounted && authProvider.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login failed: ${authProvider.error}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

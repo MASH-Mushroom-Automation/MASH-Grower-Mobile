@@ -1,13 +1,13 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 
 // Conditional imports for platform-specific code
 import 'package:path_provider/path_provider.dart' if (dart.library.html) 'package:mash_grower_mobile/data/datasources/local/path_provider_stub.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/utils/logger.dart';
+import '../../models/sensor_reading_model.dart'; // For demo mode bulk insert
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -26,7 +26,7 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbPath = path.join(documentsDirectory.path, AppConfig.databaseName);
+    final dbPath = join(documentsDirectory.path, AppConfig.databaseName);
     
     Logger.info('🗄️ Initializing database at: $dbPath');
     
@@ -174,6 +174,23 @@ class DatabaseHelper {
     return id;
   }
 
+  /// Bulk insert sensor readings for demo mode
+  Future<void> saveSensorReadings(List<SensorReadingModel> readings) async {
+    final db = await database;
+    final batch = db.batch();
+    
+    for (final reading in readings) {
+      batch.insert(
+        'sensor_readings',
+        reading.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    
+    await batch.commit(noResult: true);
+    Logger.info('💾 Saved ${readings.length} sensor readings to database');
+  }
+
   Future<List<Map<String, dynamic>>> query(
     String table, {
     String? where,
@@ -276,11 +293,141 @@ class DatabaseHelper {
   // Get database size
   Future<int> getDatabaseSize() async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbPath = path.join(documentsDirectory.path, AppConfig.databaseName);
+    final dbPath = join(documentsDirectory.path, AppConfig.databaseName);
     final file = File(dbPath);
     if (await file.exists()) {
       return await file.length();
     }
     return 0;
+  }
+
+  /// Clean up old data based on 30-day retention policy
+  /// 
+  /// This method removes:
+  /// - Sensor readings older than 30 days
+  /// - Resolved alerts older than 30 days
+  /// - Read notifications older than 30 days
+  /// - Synced queue items older than 7 days
+  Future<int> cleanupOldData() async {
+    final db = await database;
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30)).millisecondsSinceEpoch;
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+    
+    int totalDeleted = 0;
+
+    await db.transaction((txn) async {
+      // Delete old sensor readings (keep 30 days)
+      final sensorCount = await txn.delete(
+        'sensor_readings',
+        where: 'timestamp < ? AND synced = 1',
+        whereArgs: [thirtyDaysAgo],
+      );
+      totalDeleted += sensorCount;
+      Logger.info('🗑️ Deleted $sensorCount old sensor readings');
+
+      // Delete old resolved alerts (keep 30 days)
+      final alertCount = await txn.delete(
+        'alerts',
+        where: 'resolved = 1 AND created_at < ?',
+        whereArgs: [thirtyDaysAgo],
+      );
+      totalDeleted += alertCount;
+      Logger.info('🗑️ Deleted $alertCount old resolved alerts');
+
+      // Delete old read notifications (keep 30 days)
+      final notificationCount = await txn.delete(
+        'notifications',
+        where: 'read = 1 AND created_at < ?',
+        whereArgs: [thirtyDaysAgo],
+      );
+      totalDeleted += notificationCount;
+      Logger.info('🗑️ Deleted $notificationCount old read notifications');
+
+      // Delete old synced queue items (keep 7 days)
+      final queueCount = await txn.delete(
+        'sync_queue',
+        where: 'created_at < ?',
+        whereArgs: [sevenDaysAgo],
+      );
+      totalDeleted += queueCount;
+      Logger.info('🗑️ Deleted $queueCount old sync queue items');
+    });
+
+    Logger.info('✅ Cleanup complete: deleted $totalDeleted records');
+    return totalDeleted;
+  }
+
+  /// Get count of records older than retention period
+  Future<Map<String, int>> getStaleDataCounts() async {
+    final db = await database;
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30)).millisecondsSinceEpoch;
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+
+    final sensorCount = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM sensor_readings WHERE timestamp < ? AND synced = 1',
+        [thirtyDaysAgo],
+      ),
+    ) ?? 0;
+
+    final alertCount = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM alerts WHERE resolved = 1 AND created_at < ?',
+        [thirtyDaysAgo],
+      ),
+    ) ?? 0;
+
+    final notificationCount = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM notifications WHERE read = 1 AND created_at < ?',
+        [thirtyDaysAgo],
+      ),
+    ) ?? 0;
+
+    final queueCount = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM sync_queue WHERE created_at < ?',
+        [sevenDaysAgo],
+      ),
+    ) ?? 0;
+
+    return {
+      'sensor_readings': sensorCount,
+      'alerts': alertCount,
+      'notifications': notificationCount,
+      'sync_queue': queueCount,
+    };
+  }
+
+  /// Get oldest record timestamp for each table (for staleness check)
+  Future<Map<String, DateTime?>> getOldestRecordTimestamps() async {
+    final db = await database;
+
+    final sensorResult = await db.rawQuery(
+      'SELECT MIN(timestamp) as oldest FROM sensor_readings',
+    );
+    final sensorTimestamp = sensorResult.isNotEmpty && sensorResult.first['oldest'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(sensorResult.first['oldest'] as int)
+        : null;
+
+    final alertResult = await db.rawQuery(
+      'SELECT MIN(created_at) as oldest FROM alerts',
+    );
+    final alertTimestamp = alertResult.isNotEmpty && alertResult.first['oldest'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(alertResult.first['oldest'] as int)
+        : null;
+
+    final notificationResult = await db.rawQuery(
+      'SELECT MIN(created_at) as oldest FROM notifications',
+    );
+    final notificationTimestamp = notificationResult.isNotEmpty && notificationResult.first['oldest'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(notificationResult.first['oldest'] as int)
+        : null;
+
+    return {
+      'sensor_readings': sensorTimestamp,
+      'alerts': alertTimestamp,
+      'notifications': notificationTimestamp,
+    };
   }
 }

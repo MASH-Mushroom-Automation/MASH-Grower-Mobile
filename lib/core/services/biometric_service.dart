@@ -45,7 +45,9 @@ class BiometricService {
     if (kIsWeb) return [];
     
     try {
-      return await _localAuth.getAvailableBiometrics();
+      final types = await _localAuth.getAvailableBiometrics();
+      Logger.info('Available biometrics: $types');
+      return types;
     } catch (e) {
       Logger.error('Failed to get available biometrics: $e');
       return [];
@@ -65,8 +67,11 @@ class BiometricService {
 
   /// Enable biometric authentication for quick login
   /// Requires user to authenticate first
+  /// Optionally stores credentials for auto-login
   Future<bool> enableBiometricAuth({
     String reason = 'Enable biometric authentication for quick access',
+    String? email,
+    String? password,
   }) async {
     if (kIsWeb) {
       Logger.info('Biometric auth not supported on web');
@@ -84,6 +89,12 @@ class BiometricService {
 
       if (isAuthenticated) {
         await _secureStorage.write(key: StorageKeys.biometricEnabled, value: 'true');
+        
+        // Store credentials if provided
+        if (email != null && password != null) {
+          await storeBiometricCredentials(email, password);
+        }
+        
         Logger.info('Biometric authentication enabled');
         return true;
       }
@@ -95,11 +106,42 @@ class BiometricService {
     }
   }
 
+  /// Store credentials for biometric login
+  Future<void> storeBiometricCredentials(String email, String password) async {
+    try {
+      // Store as colon-separated string for easy retrieval
+      final credentials = '$email:$password';
+      await _secureStorage.write(key: StorageKeys.biometricCredentials, value: credentials);
+      Logger.info('Biometric credentials stored securely');
+    } catch (e) {
+      Logger.error('Failed to store biometric credentials: $e');
+    }
+  }
+
+  /// Retrieve stored credentials after successful biometric authentication
+  Future<Map<String, String>?> retrieveBiometricCredentials() async {
+    try {
+      final credentials = await _secureStorage.read(key: StorageKeys.biometricCredentials);
+      if (credentials == null) return null;
+      
+      // Parse stored credentials
+      final parts = credentials.split(':');
+      if (parts.length == 2) {
+        return {'email': parts[0], 'password': parts[1]};
+      }
+      return null;
+    } catch (e) {
+      Logger.error('Failed to retrieve biometric credentials: $e');
+      return null;
+    }
+  }
+
   /// Disable biometric authentication
   Future<void> disableBiometricAuth() async {
     try {
       await _secureStorage.delete(key: StorageKeys.biometricEnabled);
-      Logger.info('Biometric authentication disabled');
+      await _secureStorage.delete(key: StorageKeys.biometricCredentials);
+      Logger.info('Biometric authentication disabled and credentials cleared');
     } catch (e) {
       Logger.error('Failed to disable biometric auth: $e');
     }

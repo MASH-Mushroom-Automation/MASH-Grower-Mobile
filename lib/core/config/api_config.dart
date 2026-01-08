@@ -9,7 +9,7 @@ class ApiConfig {
   // Base URLs for different environments
   static const String baseUrlDev = 'http://localhost:3000';
   static const String baseUrlStaging = 'https://staging-api.mashgrower.com';
-  static const String baseUrlProd = 'https://mash-space.up.railway.app';
+  static const String baseUrlProd = 'https://mash-backend-production.up.railway.app';
   
   // API Version
   static const String apiVersion = '/api/v1';
