@@ -187,3 +187,4 @@ The app provides:
 
 Just enable WiFi/Bluetooth in your phone settings, and the app will work! 🚀
 
+

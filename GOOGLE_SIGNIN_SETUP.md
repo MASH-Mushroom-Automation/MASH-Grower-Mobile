@@ -252,3 +252,4 @@ For issues or questions:
 4. Consider adding more OAuth providers (Facebook, Apple, etc.)
 5. Implement account linking (link Google account to existing email account)
 
+

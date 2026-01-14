@@ -52,3 +52,4 @@ class OAuthRequestModel extends Equatable {
   List<Object?> get props => [idToken, accessToken, provider, email, displayName, photoUrl];
 }
 
+

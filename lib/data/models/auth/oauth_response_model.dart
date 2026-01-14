@@ -47,3 +47,4 @@ class OAuthResponseModel extends Equatable {
   List<Object?> get props => [success, message, accessToken, refreshToken, user, isNewUser];
 }
 
+
