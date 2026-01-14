@@ -11,6 +11,8 @@ import '../../models/auth/forgot_password_request_model.dart';
 import '../../models/auth/forgot_password_response_model.dart';
 import '../../models/auth/reset_password_request_model.dart';
 import '../../models/auth/reset_password_response_model.dart';
+import '../../models/auth/oauth_request_model.dart';
+import '../../models/auth/oauth_response_model.dart';
 import '../../models/auth/backend_user_model.dart';
 
 /// Remote data source for authentication operations
@@ -217,6 +219,47 @@ class AuthRemoteDataSource {
       return ResetPasswordResponseModel.fromJson(response.data);
     } catch (e) {
       Logger.error('❌ Password reset failed', e);
+      rethrow;
+    }
+  }
+  
+  // ========== OAuth Authentication ==========
+  
+  /// Authenticate with OAuth provider (Google, Facebook, etc.)
+  Future<OAuthResponseModel> oauthLogin(OAuthRequestModel request) async {
+    try {
+      Logger.info('🔐 OAuth login with provider: ${request.provider}');
+      
+      // Determine the correct endpoint based on provider
+      String endpoint;
+      switch (request.provider.toLowerCase()) {
+        case 'google':
+          endpoint = ApiEndpoints.authOAuthGoogle;
+          break;
+        case 'facebook':
+          endpoint = ApiEndpoints.authOAuthFacebook;
+          break;
+        case 'github':
+          endpoint = ApiEndpoints.authOAuthGithub;
+          break;
+        default:
+          throw Exception('Unsupported OAuth provider: ${request.provider}');
+      }
+      
+      final response = await _apiClient.post(
+        endpoint,
+        data: request.toJson(),
+      );
+      
+      Logger.info('✅ OAuth login successful');
+      
+      // Extract the actual data from the wrapped response
+      final responseData = response.data;
+      final oauthData = responseData['data'] ?? responseData;
+      
+      return OAuthResponseModel.fromJson(oauthData);
+    } catch (e) {
+      Logger.error('❌ OAuth login failed', e);
       rethrow;
     }
   }

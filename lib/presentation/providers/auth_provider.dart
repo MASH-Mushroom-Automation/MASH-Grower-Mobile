@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -15,12 +16,16 @@ import '../../core/utils/validators.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/auth/backend_user_model.dart';
 import '../../data/models/auth/login_request_model.dart';
+import '../../data/models/auth/oauth_request_model.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
 import '../../data/datasources/local/auth_local_datasource.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final LocalAuthentication _localAuth = LocalAuthentication();
   final AuthLocalDataSource _authLocalDataSource = AuthLocalDataSource();
@@ -236,18 +241,118 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Google Sign-In with OAuth
+  /// 
+  /// Authenticates user with Google OAuth and exchanges tokens with backend API
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
     _clearError();
 
     try {
-      Logger.info('Google sign-in not implemented');
-      _setError('Google Sign-In is not available. Please use email/password login.');
-      return false;
+      Logger.info('🔐 Starting Google Sign-In...');
       
-    } catch (e) {
-      Logger.error('Google sign in failed: $e');
-      _setError('Google Sign-In failed');
+      // Step 1: Sign in with Google
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          // User cancelled the sign-in
+          Logger.info('Google sign-in cancelled by user');
+          _setError('Sign-in cancelled');
+          return false;
+        }
+      } catch (e) {
+        Logger.error('Google Sign-In failed', e);
+        _setError('Failed to sign in with Google. Please try again.');
+        return false;
+      }
+      
+      // Step 2: Get authentication details from Google
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      if (googleAuth.idToken == null) {
+        Logger.error('Google ID token is null');
+        _setError('Failed to get Google authentication token');
+        return false;
+      }
+      
+      Logger.info('✅ Google authentication successful');
+      Logger.info('📧 User email: ${googleUser.email}');
+      
+      // Step 3: Create OAuth request for backend
+      final oauthRequest = OAuthRequestModel.google(
+        idToken: googleAuth.idToken!,
+        accessToken: googleAuth.accessToken,
+        email: googleUser.email,
+        displayName: googleUser.displayName,
+        photoUrl: googleUser.photoUrl,
+      );
+      
+      // Step 4: Authenticate with backend API
+      Logger.info('🌐 Authenticating with backend API...');
+      final response = await _authRepository.oauthLogin(oauthRequest);
+      
+      if (response.success && response.user != null) {
+        // Store backend user data
+        _backendUser = response.user;
+        
+        // Create user model from backend user
+        _user = UserModel(
+          id: response.user.id,
+          email: response.user.email,
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
+          profileImageUrl: response.user.avatarUrl,
+          role: 'grower',
+          createdAt: response.user.createdAt,
+          updatedAt: response.user.updatedAt,
+        );
+        
+        // JWT tokens are already stored by AuthRepository
+        _isAuthenticated = true;
+        
+        // Save user data locally
+        try {
+          await _authLocalDataSource.saveUser(_user!);
+        } catch (e) {
+          Logger.error('Failed to save user locally: $e');
+        }
+        
+        Logger.authLogin('Google OAuth Login - ${response.user.email}');
+        Logger.info('✅ User logged in: ${response.user.displayName}');
+        
+        // Set loading to false before notifying listeners
+        _isLoading = false;
+        
+        // Notify listeners to update UI immediately
+        notifyListeners();
+        
+        return true;
+      } else {
+        _setError(response.message);
+        return false;
+      }
+      
+    } catch (e, stackTrace) {
+      Logger.error('❌ Google sign-in failed', e);
+      print('❌ ERROR in signInWithGoogle: $e');
+      print('Stack trace: $stackTrace');
+      
+      // Extract user-friendly error message
+      String errorMessage = 'Google Sign-In failed. Please try again.';
+      if (e.toString().contains('network') || e.toString().contains('Network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (e.toString().contains('cancelled') || e.toString().contains('canceled')) {
+        errorMessage = 'Sign-in was cancelled.';
+        // Don't show error for user cancellation
+        _isLoading = false;
+        return false;
+      } else if (e.toString().contains('account') || e.toString().contains('email')) {
+        errorMessage = 'Account error. Please try again or use email/password login.';
+      }
+      
+      _setError(errorMessage);
+      _isLoading = false;
       return false;
     } finally {
       _setLoading(false);

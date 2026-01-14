@@ -2,16 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:multicast_dns/multicast_dns.dart';
-import '../../../core/services/websocket_device_service.dart';
+import 'package:wifi_scan/wifi_scan.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/device_connection_service.dart';
-import '../../../core/services/mock_device_service.dart';
 import '../../../core/utils/logger.dart';
 import '../../../services/bluetooth_device_service.dart';
-import '../../../services/device_connection_manager.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/device_provider.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
-import 'wifi_provisioning_screen.dart';
 import 'ble_wifi_provisioning_screen.dart';
 
 /// Hybrid device connection screen supporting:
@@ -32,6 +30,10 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
   final DeviceConnectionService _localService = DeviceConnectionService();
   List<Map<String, dynamic>> _localDevices = [];
   bool _isScanningLocal = false;
+  
+  // WiFi Networks (for testing without Pi)
+  List<WiFiAccessPoint> _wifiNetworks = [];
+  bool _isScanningWiFi = false;
   
   // Manual IP
   final _formKey = GlobalKey<FormState>();
@@ -58,6 +60,7 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
     // Auto-scan on load
     _scanLocalDevices();
     _loadPairedDevices();
+    _scanWiFiNetworks(); // Also scan WiFi networks for testing
   }
   
   Future<void> _loadPairedDevices() async {
@@ -106,6 +109,133 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
   // 2. Bluetooth (BLE scanning)
 
   // Cloud device connection function removed
+
+  // ============ OPEN SYSTEM SETTINGS ============
+  
+  Future<void> _openWiFiSettings() async {
+    try {
+      if (Platform.isAndroid) {
+        // Android: Open WiFi settings using intent
+        final uri = Uri.parse('android.settings.WIFI_SETTINGS');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        } else {
+          // Fallback: Open general settings
+          await openAppSettings();
+        }
+      } else {
+        // iOS: Open app settings (iOS doesn't allow direct WiFi settings)
+        await openAppSettings();
+      }
+    } catch (e) {
+      Logger.error('Failed to open WiFi settings: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open WiFi settings. Please enable WiFi manually.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _openBluetoothSettings() async {
+    try {
+      if (Platform.isAndroid) {
+        // Android: Open Bluetooth settings using intent
+        final uri = Uri.parse('android.settings.BLUETOOTH_SETTINGS');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        } else {
+          // Fallback: Open general settings
+          await openAppSettings();
+        }
+      } else {
+        // iOS: Open app settings (iOS doesn't allow direct Bluetooth settings)
+        await openAppSettings();
+      }
+    } catch (e) {
+      Logger.error('Failed to open Bluetooth settings: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open Bluetooth settings. Please enable Bluetooth manually.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  // ============ WIFI NETWORKS (For Testing Without Pi) ============
+  
+  Future<void> _scanWiFiNetworks() async {
+    setState(() {
+      _isScanningWiFi = true;
+      _wifiNetworks = [];
+    });
+
+    try {
+      Logger.info('Scanning WiFi networks on phone...');
+      
+      // Request location permission (required for WiFi scan on Android)
+      final locationStatus = await Permission.location.status;
+      if (!locationStatus.isGranted) {
+        final requested = await Permission.location.request();
+        if (!requested.isGranted) {
+          Logger.warning('Location permission denied - WiFi scan may not work');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location permission required for WiFi scanning'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+          return;
+        }
+      }
+      
+      // Check if WiFi scan is available
+      final canScan = await WiFiScan.instance.canGetScannedResults();
+      if (canScan != CanGetScannedResults.yes) {
+        Logger.warning('WiFi scanning not available: $canScan');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('WiFi scanning not available. Please enable WiFi in Settings and grant location permission.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Start scan
+      await WiFiScan.instance.startScan();
+      
+      // Wait a bit for scan to complete
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Get results
+      final results = await WiFiScan.instance.getScannedResults();
+      
+      setState(() {
+        _wifiNetworks = results;
+        _wifiNetworks.sort((a, b) => (b.level).compareTo(a.level)); // Sort by signal strength
+      });
+      
+      Logger.info('Found ${_wifiNetworks.length} WiFi networks');
+    } catch (e) {
+      Logger.error('WiFi network scan failed: $e');
+      // Don't show error to user - this is just for testing
+    } finally {
+      setState(() => _isScanningWiFi = false);
+    }
+  }
 
   // ============ LOCAL DEVICES (mDNS Auto-Discovery) ============
   
@@ -580,35 +710,249 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
           color: Colors.blue,
         ),
         
-        if (_isScanningLocal)
-          const Expanded(
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (_localDevices.isEmpty)
-          _buildEmptyState(
-            icon: Icons.wifi_off,
-            message: 'No local devices found',
-            subtitle: 'Make sure device is on same WiFi',
-            onRefresh: _scanLocalDevices,
-          )
-        else
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _localDevices.length,
-              itemBuilder: (context, index) {
-                final device = _localDevices[index];
-                return _buildDeviceCard(
+        // WiFi status info with button
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'WiFi must be enabled to scan networks.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade900,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _openWiFiSettings,
+                icon: const Icon(Icons.settings, size: 16),
+                label: const Text('Open Settings'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue.shade700,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Refresh button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _localDevices.isEmpty 
+                      ? 'No MASH devices found' 
+                      : '${_localDevices.length} MASH device(s) found',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _isScanningLocal ? null : _scanLocalDevices,
+                icon: _isScanningLocal
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.refresh, size: 18),
+                label: Text(_isScanningLocal ? 'Scanning...' : 'Scan Devices'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // MASH Devices Section
+              if (_localDevices.isNotEmpty) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.devices, size: 20, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(
+                      'MASH Devices (${_localDevices.length})',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ..._localDevices.map((device) => _buildDeviceCard(
                   device: device,
                   onTap: () => _connectToLocalDevice(
                     device['ipAddress'],
                     device['port'],
                   ),
-                );
-              },
-            ),
+                )),
+                const SizedBox(height: 24),
+              ],
+              
+              // WiFi Networks Section (for testing)
+              Row(
+                children: [
+                  const Icon(Icons.wifi, size: 20, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Available WiFi Networks (${_wifiNetworks.length})',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_isScanningWiFi)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.refresh, size: 18),
+                      onPressed: _scanWiFiNetworks,
+                      tooltip: 'Refresh WiFi networks',
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              if (_wifiNetworks.isEmpty && !_isScanningWiFi)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.wifi_off, size: 48, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No WiFi networks found',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: _scanWiFiNetworks,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Scan Again'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ..._wifiNetworks.take(20).map((network) => _buildWiFiNetworkCard(network)),
+              
+              // Empty State for MASH devices
+              if (_localDevices.isEmpty && !_isScanningLocal) ...[
+                const SizedBox(height: 24),
+                _buildEmptyState(
+                  icon: Icons.devices_other,
+                  message: 'No MASH devices found',
+                  subtitle: 'Make sure your Raspberry Pi is:\n• On the same WiFi network\n• Running mDNS service\n• Or use Manual IP tab',
+                  onRefresh: _scanLocalDevices,
+                ),
+              ],
+            ],
           ),
+        ),
       ],
+    );
+  }
+  
+  Widget _buildWiFiNetworkCard(WiFiAccessPoint network) {
+    final signalStrength = network.level;
+    final signalColor = signalStrength > -50 
+        ? Colors.green 
+        : signalStrength > -70 
+            ? Colors.orange 
+            : Colors.red;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(
+              network.capabilities.contains('WPA') || network.capabilities.contains('WEP')
+                  ? Icons.lock
+                  : Icons.lock_open,
+              size: 20,
+              color: signalColor,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    network.ssid.isEmpty ? '(Hidden Network)' : network.ssid,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.signal_cellular_alt,
+                        size: 14,
+                        color: signalColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${signalStrength} dBm',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        network.capabilities,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -626,7 +970,21 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
       // Check if Bluetooth is available
       final available = await _bluetoothService.isBluetoothAvailable();
       if (!available) {
-        throw Exception('Bluetooth not available. Please enable Bluetooth.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Bluetooth is disabled. Please enable it in Settings.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Open Settings',
+                textColor: Colors.white,
+                onPressed: _openBluetoothSettings,
+              ),
+            ),
+          );
+        }
+        throw Exception('Bluetooth not available. Please enable Bluetooth in phone settings.');
       }
 
       // Start scanning
@@ -736,81 +1094,8 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
     }
   }
 
-  Future<bool?> _showPairingDialog(BluetoothMashDevice device) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Pair with ${device.name}?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'This will allow the app to connect to your device.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.bluetooth, size: 20, color: Colors.purple),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          device.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Address: ${device.address}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  Text(
-                    'Signal: ${device.rssi} dBm',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Pair'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Note: _showPairingDialog removed - pairing is handled by system
+  // Users can pair devices in phone settings if needed
 
   Future<bool?> _showWiFiProvisioningDialog() async {
     return showDialog<bool>(
@@ -853,6 +1138,71 @@ class _HybridDeviceConnectionScreenState extends State<HybridDeviceConnectionScr
           title: 'Bluetooth Connection',
           description: 'Direct connection via Bluetooth',
           color: Colors.purple,
+        ),
+        
+        // Bluetooth status check
+        FutureBuilder<bool>(
+          future: _bluetoothService.isBluetoothAvailable(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData && !snapshot.data!) {
+              return Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.bluetooth_disabled, color: Colors.orange.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Bluetooth is disabled',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.orange.shade900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Please enable Bluetooth to scan for devices.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _openBluetoothSettings,
+                        icon: const Icon(Icons.bluetooth, size: 18),
+                        label: const Text('Open Bluetooth Settings'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
         ),
         
         // Refresh button

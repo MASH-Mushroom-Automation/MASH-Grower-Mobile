@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../widgets/common/validated_text_field.dart';
 import '../../../providers/registration_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../auth/login_screen.dart';
+import '../../../screens/home/home_screen.dart';
 
 class EmailPage extends StatefulWidget {
   final VoidCallback onNext;
@@ -54,10 +56,43 @@ class _EmailPageState extends State<EmailPage> {
   }
 
   Future<void> _handleGoogleSignUp() async {
-    // TODO: Implement Google Sign-Up
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-Up not implemented yet')),
-    );
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    try {
+      // Use the same Google Sign-In method (works for both registration and login)
+      // The backend automatically:
+      // - Creates a new account if user doesn't exist (registration)
+      // - Logs in if user already exists (login)
+      final success = await authProvider.signInWithGoogle();
+      
+      if (success && mounted) {
+        // User is now authenticated (either newly registered or logged in)
+        // Navigate to home screen
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false, // Remove all previous routes
+        );
+      } else if (mounted && authProvider.error != null) {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error!),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google Sign-Up failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleFacebookSignUp() async {

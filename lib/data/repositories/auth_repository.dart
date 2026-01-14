@@ -11,6 +11,8 @@ import '../models/auth/forgot_password_request_model.dart';
 import '../models/auth/forgot_password_response_model.dart';
 import '../models/auth/reset_password_request_model.dart';
 import '../models/auth/reset_password_response_model.dart';
+import '../models/auth/oauth_request_model.dart';
+import '../models/auth/oauth_response_model.dart';
 import '../models/auth/backend_user_model.dart';
 
 /// Authentication repository
@@ -177,6 +179,26 @@ class AuthRepository {
       return await _remoteDataSource.resetPassword(request);
     } catch (e) {
       Logger.error('Repository: Reset password failed', e);
+      rethrow;
+    }
+  }
+  
+  // ========== OAuth Authentication ==========
+  
+  /// Authenticate with OAuth provider (Google, Facebook, etc.)
+  Future<OAuthResponseModel> oauthLogin(OAuthRequestModel request) async {
+    try {
+      final response = await _remoteDataSource.oauthLogin(request);
+      
+      // Save tokens
+      await _secureStorage.saveTokens(
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+      );
+      
+      return response;
+    } catch (e) {
+      Logger.error('Repository: OAuth login failed', e);
       rethrow;
     }
   }
